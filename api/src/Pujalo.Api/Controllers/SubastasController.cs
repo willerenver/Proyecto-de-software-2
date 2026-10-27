@@ -125,18 +125,29 @@ public class SubastasController(PujaloDbContext db, PujaService pujas, TimeProvi
         if (subasta.Articulo.Imagenes.Count + fotos.Count > ImagenArticulo.Maximo)
             throw new ReglaException($"Puedes subir hasta {ImagenArticulo.Maximo} fotos.");
 
+        if (fotos.Count == 0)
+            throw new ReglaException("Elige al menos una foto.");
+
+        // Primero se revisan todas, para no dejar archivos sueltos si una no sirve.
+        // El tipo se decide por el contenido del archivo, no por lo que declara el navegador.
+        var extensiones = new List<string>();
+        foreach (var foto in fotos)
+        {
+            if (foto.Length > ImagenArticulo.PesoMaximo)
+                throw new ReglaException("Cada foto puede pesar hasta 10 MB.");
+            await using var contenido = foto.OpenReadStream();
+            extensiones.Add(await ImagenArticulo.ExtensionPorContenidoAsync(contenido, ct)
+                ?? throw new ReglaException($"«{Path.GetFileName(foto.FileName)}» no es una foto JPG o PNG."));
+        }
+
         var carpeta = Path.Combine(entorno.WebRootPath ?? Path.Combine(entorno.ContentRootPath, "wwwroot"), "fotos");
         Directory.CreateDirectory(carpeta);
         var orden = (short)(subasta.Articulo.Imagenes.Select(i => (int)i.Orden).DefaultIfEmpty(0).Max() + 1);
-        foreach (var foto in fotos)
+        for (var i = 0; i < fotos.Count; i++)
         {
-            var extension = foto.ContentType switch { "image/jpeg" => ".jpg", "image/png" => ".png", _ => null }
-                ?? throw new ReglaException("Solo se aceptan fotos JPG o PNG.");
-            if (foto.Length > ImagenArticulo.PesoMaximo)
-                throw new ReglaException("Cada foto puede pesar hasta 10 MB.");
-            var nombre = $"{Guid.NewGuid():N}{extension}";
+            var nombre = $"{Guid.NewGuid():N}{extensiones[i]}";
             await using (var destino = System.IO.File.Create(Path.Combine(carpeta, nombre)))
-                await foto.CopyToAsync(destino, ct);
+                await fotos[i].CopyToAsync(destino, ct);
             subasta.Articulo.Imagenes.Add(new ImagenArticulo { Ruta = $"/fotos/{nombre}", Orden = orden++ });
         }
         await db.SaveChangesAsync(ct);

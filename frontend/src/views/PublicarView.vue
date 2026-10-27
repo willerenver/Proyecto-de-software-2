@@ -225,7 +225,9 @@ async function publicar() {
       </div>
     </div>
 
-    <div class="dos-columnas">
+    <!-- Al editar, el formulario aparece cuando llegan los datos, para que no pisen lo que el usuario escriba. -->
+    <p v-if="cargandoEdicion" class="texto-gris">Cargando la subasta…</p>
+    <div v-else class="dos-columnas">
       <form class="d-flex flex-column gap-4" novalidate @submit.prevent="publicar">
         <section class="panel d-flex flex-column gap-3">
           <div class="d-flex justify-content-between"><h2 class="fs-5 fw-bold mb-0">Fotos</h2><span class="texto-gris texto-pequeno">{{ fotos.length }} de {{ MAX_FOTOS }}</span></div>

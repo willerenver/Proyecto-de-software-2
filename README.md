@@ -46,6 +46,16 @@ En desarrollo, Vite reenvía `/api` y `/fotos` a `http://localhost:5230` (`vite.
 
 La versión móvil son las mismas pantallas adaptadas al ancho del teléfono. Publicar, Mis pujas, Mis ventas y Pagar piden iniciar sesión. Las pujas, cierres y cambios llegan al instante por SignalR (`/api/tiempo-real`); si la conexión falla, cada pantalla vuelve a consultar la API cada 30 a 60 segundos.
 
+## Pruebas
+
+```bash
+cd api && dotnet test                         # 41 pruebas de las reglas de negocio (no necesitan SQL Server)
+cd frontend && npx playwright install chromium   # solo la primera vez
+cd frontend && npm run e2e                    # 16 pruebas de punta a punta contra http://localhost:8080
+```
+
+Las pruebas de punta a punta recorren la aplicación como un usuario: crear cuenta, entrar, publicar con foto, editar y retirar, pujar, puja automática, coordinar la compra, administración y la versión móvil. Necesitan la aplicación levantada (`docker compose up`) y cambian datos; para empezar de cero: `docker compose down -v && docker compose up -d`. Otra dirección: `PUJALO_URL=http://localhost:5173 npm run e2e`. El informe queda en `frontend/playwright-report`.
+
 ## API
 
 Usa SQL Server. En desarrollo sirve el contenedor de Docker (`mcr.microsoft.com/mssql/server:2022-latest`, puerto 1433). La cadena de conexión no va en el repositorio: cada uno la guarda con *user-secrets*.
