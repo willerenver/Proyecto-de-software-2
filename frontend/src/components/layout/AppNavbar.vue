@@ -1,11 +1,39 @@
 <script setup>
-import { useRoute } from 'vue-router'
-import { Bell, ChevronDown, Menu, Search } from 'lucide-vue-next'
+import { onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ChevronDown, LogOut, Search } from 'lucide-vue-next'
 import LogoPujalo from '../LogoPujalo.vue'
 import AvatarIniciales from '../AvatarIniciales.vue'
-import { categorias, usuarioActual } from '../../data/subastas'
+import { categorias, cargarCategorias } from '../../stores/categorias'
+import { cerrarSesion, esAdministrador, sesion } from '../../stores/sesion'
 
 const route = useRoute()
+const router = useRouter()
+const texto = ref('')
+const categoria = ref('')
+const menuAbierto = ref(false)
+
+onMounted(() => cargarCategorias().catch(() => {}))
+
+// El buscador refleja lo que se está viendo en el inicio.
+watch(() => route.query, q => {
+  texto.value = q.buscar ?? ''
+  categoria.value = q.categoria ?? ''
+}, { immediate: true })
+
+watch(() => route.fullPath, () => { menuAbierto.value = false })
+
+function buscar() {
+  const query = {}
+  if (texto.value.trim()) query.buscar = texto.value.trim()
+  if (categoria.value) query.categoria = categoria.value
+  router.push({ name: 'inicio', query })
+}
+
+function salir() {
+  cerrarSesion()
+  router.push('/')
+}
 </script>
 
 <template>
@@ -14,26 +42,41 @@ const route = useRoute()
     <div class="barra-superior d-none d-lg-block">
       <div class="contenedor d-flex align-items-center gap-4 py-3">
         <LogoPujalo />
-        <form class="buscador flex-grow-1" role="search" @submit.prevent>
-          <select class="categoria" aria-label="Categoría">
-            <option>Todas</option>
-            <option v-for="c in categorias" :key="c.id">{{ c.nombre }}</option>
+        <form class="buscador flex-grow-1" role="search" @submit.prevent="buscar">
+          <select v-model="categoria" class="categoria" aria-label="Categoría">
+            <option value="">Todas</option>
+            <option v-for="c in categorias" :key="c.id" :value="String(c.id)">{{ c.nombre }}</option>
           </select>
-          <input type="search" class="campo" placeholder="Buscar artículos, marcas y más…" aria-label="Buscar" />
+          <input v-model="texto" type="search" class="campo" maxlength="80" placeholder="Buscar artículos, marcas y más…" aria-label="Buscar" />
           <button type="submit" class="boton-buscar" aria-label="Buscar"><Search :size="18" /></button>
         </form>
         <nav class="acciones d-flex align-items-center gap-4">
           <RouterLink to="/publicar" class="fw-medium">Vender</RouterLink>
           <RouterLink to="/mis-pujas" class="fw-medium text-body">Mis pujas</RouterLink>
-          <button class="campana" aria-label="Notificaciones"><Bell :size="22" :stroke-width="1.8" /><span class="punto" /></button>
-          <AvatarIniciales :iniciales="usuarioActual.iniciales" />
+          <div v-if="sesion.usuario" class="position-relative">
+            <button type="button" class="cuenta" :aria-expanded="menuAbierto" aria-label="Mi cuenta" @click="menuAbierto = !menuAbierto">
+              <AvatarIniciales :iniciales="sesion.usuario.iniciales" />
+              <ChevronDown :size="14" />
+            </button>
+            <div v-if="menuAbierto" class="menu-cuenta">
+              <div class="px-3 py-2 border-bottom">
+                <div class="fw-bold">{{ sesion.usuario.nombre }} {{ sesion.usuario.apellido }}</div>
+                <small class="texto-gris">{{ sesion.usuario.correo }}</small>
+              </div>
+              <RouterLink to="/mis-pujas">Mis pujas</RouterLink>
+              <RouterLink to="/mis-ventas">Mis ventas</RouterLink>
+              <RouterLink v-if="esAdministrador()" to="/admin">Administración</RouterLink>
+              <button type="button" class="salir" @click="salir"><LogOut :size="16" /> Cerrar sesión</button>
+            </div>
+          </div>
+          <RouterLink v-else :to="{ name: 'iniciar-sesion', query: { volver: route.fullPath } }" class="btn btn-primary">Iniciar sesión</RouterLink>
         </nav>
       </div>
     </div>
     <nav class="barra-categorias d-none d-lg-block">
       <div class="contenedor d-flex align-items-center gap-4 py-2">
-        <span class="fw-medium text-white d-inline-flex align-items-center gap-1">Todas las categorías <ChevronDown :size="14" /></span>
-        <a v-for="c in categorias" :key="c.id" href="#" @click.prevent>{{ c.nombre }}</a>
+        <RouterLink to="/" class="fw-medium text-white">Todas las categorías</RouterLink>
+        <RouterLink v-for="c in categorias" :key="c.id" :to="{ name: 'inicio', query: { categoria: c.id } }">{{ c.nombre }}</RouterLink>
       </div>
     </nav>
 
@@ -41,15 +84,13 @@ const route = useRoute()
     <div v-if="!route.meta.cabeceraMovilPropia" class="d-lg-none bg-white px-3 pt-3 pb-2">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <LogoPujalo />
-        <div class="d-flex gap-3">
-          <Bell :size="22" />
-          <Menu :size="22" />
-        </div>
+        <RouterLink v-if="!sesion.usuario" :to="{ name: 'iniciar-sesion', query: { volver: route.fullPath } }" class="fw-medium">Entrar</RouterLink>
+        <AvatarIniciales v-else :iniciales="sesion.usuario.iniciales" :tam="32" />
       </div>
-      <label class="buscador-movil">
+      <form class="buscador-movil" role="search" @submit.prevent="buscar">
         <Search :size="18" class="texto-gris" />
-        <input type="search" placeholder="Buscar en Pújalo" aria-label="Buscar" />
-      </label>
+        <input v-model="texto" type="search" maxlength="80" placeholder="Buscar en Pújalo" aria-label="Buscar" />
+      </form>
     </div>
   </header>
 </template>
@@ -90,21 +131,51 @@ const route = useRoute()
   color: #fff;
 }
 
-.campana {
-  position: relative;
+.cuenta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   border: 0;
   background: none;
   padding: 0;
+  color: var(--pj-gris);
 }
 
-.punto {
+.menu-cuenta {
   position: absolute;
-  top: 0;
-  right: -2px;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--pj-peligro);
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 1040;
+  width: 240px;
+  background: #fff;
+  border: 1px solid var(--pj-borde);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.menu-cuenta a,
+.menu-cuenta .salir {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  border: 0;
+  background: none;
+  color: var(--pj-texto);
+  font-size: 14px;
+  text-align: left;
+}
+
+.menu-cuenta a:hover,
+.menu-cuenta .salir:hover {
+  background: var(--pj-claro);
+}
+
+.menu-cuenta .salir {
+  border-top: 1px solid var(--pj-borde);
+  color: var(--pj-gris);
 }
 
 .barra-categorias {
@@ -116,7 +187,8 @@ const route = useRoute()
   color: #dce6f3;
 }
 
-.barra-categorias a:hover {
+.barra-categorias a:hover,
+.barra-categorias a.router-link-exact-active {
   color: #fff;
 }
 

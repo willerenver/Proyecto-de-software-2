@@ -1,15 +1,18 @@
 <script setup>
-import { computed, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onBeforeUnmount, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Check, Info, Upload, X } from 'lucide-vue-next'
 import SubastaCard from '../components/SubastaCard.vue'
-import { categorias, subastas, subcategorias, usuarioActual } from '../data/subastas'
-import { diaCorto, rd } from '../utils/formato'
+import { api, urlFoto } from '../api/cliente'
+import { categorias, cargarCategorias } from '../stores/categorias'
+import { CONDICIONES, diaCorto, fechaConHora, rd } from '../utils/formato'
 
+// La misma pantalla publica (/publicar) y corrige una subasta sin pujas (/subastas/:id/editar).
+const route = useRoute()
 const router = useRouter()
-const condiciones = ['Nuevo', 'Usado, como nuevo', 'Usado, buen estado', 'Usado, con detalles']
+const editandoId = route.params.id ? Number(route.params.id) : null
 const duraciones = [1, 3, 5, 7]
-const incrementos = [100, 250, 500, 1000]
+const incrementos = reactive([100, 250, 500, 1000])
 const MAX_FOTOS = 10
 const MAX_MB = 10
 
@@ -18,26 +21,48 @@ const local = d => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOSt
 
 const form = reactive({
   titulo: '',
-  categoria: '',
-  condicion: 'Usado, buen estado',
+  categoriaId: '',
+  condicion: 'buen_estado',
   descripcion: '',
   precioSalida: null,
   incrementoMinimo: 250,
   precioReserva: null,
+  empiezaAhora: true,
   fechaInicio: local(enUnaHora),
   duracion: 3,
   extenderAlFinal: true,
-  comprarYa: false,
-  precioComprarYa: null,
   retiroEnPersona: true,
   envioADomicilio: false,
 })
 const COMISION = 0.08
-const borradorGuardado = ref(false)
 const arrastrando = ref(false)
 const fotos = ref([])
 const errores = ref({})
 const errorFotos = ref('')
+const errorGeneral = ref('')
+const publicando = ref(false)
+const creada = ref(null)
+// Al editar: fotos ya guardadas que el vendedor quitó y fecha de inicio si la subasta ya empezó.
+const quitadas = ref([])
+const yaEmpezo = ref(null)
+const cargandoEdicion = ref(!!editandoId)
+
+cargarCategorias().catch(e => { errorGeneral.value = e.message })
+onBeforeUnmount(() => fotos.value.forEach(f => f.archivo && URL.revokeObjectURL(f.url)))
+
+if (editandoId) {
+  api(`/api/subastas/${editandoId}/edicion`).then(d => {
+    Object.assign(form, {
+      titulo: d.titulo, categoriaId: d.categoriaId, condicion: d.condicion, descripcion: d.descripcion,
+      precioSalida: d.precioSalida, incrementoMinimo: d.incrementoMinimo, precioReserva: d.precioReserva,
+      empiezaAhora: d.estado !== 'Programada', fechaInicio: local(new Date(d.fechaInicio)), duracion: d.duracionDias,
+      extenderAlFinal: d.extenderAlFinal, retiroEnPersona: d.permiteRetiro, envioADomicilio: d.permiteEnvio,
+    })
+    if (!incrementos.includes(d.incrementoMinimo)) incrementos.push(d.incrementoMinimo)
+    if (d.estado !== 'Programada') yaEmpezo.value = d.fechaInicio
+    fotos.value = d.fotos.map((ruta, i) => ({ nombre: `Foto ${i + 1}`, url: urlFoto(ruta), ruta }))
+  }).catch(e => { errorGeneral.value = e.message }).finally(() => { cargandoEdicion.value = false })
+}
 
 function agregarFotos(evento) {
   agregarArchivos(evento.target.files)
@@ -55,74 +80,121 @@ function agregarArchivos(archivos) {
     if (fotos.value.length >= MAX_FOTOS) { errorFotos.value = `Puedes subir hasta ${MAX_FOTOS} fotos.`; break }
     if (!['image/jpeg', 'image/png'].includes(archivo.type)) { errorFotos.value = 'Solo se aceptan fotos JPG o PNG.'; continue }
     if (archivo.size > MAX_MB * 1024 * 1024) { errorFotos.value = `Cada foto puede pesar hasta ${MAX_MB} MB.`; continue }
-    fotos.value.push({ nombre: archivo.name, url: URL.createObjectURL(archivo) })
+    fotos.value.push({ nombre: archivo.name, url: URL.createObjectURL(archivo), archivo })
   }
 }
 
 function quitarFoto(i) {
-  URL.revokeObjectURL(fotos.value[i].url)
+  const foto = fotos.value[i]
+  if (foto.ruta) quitadas.value.push(foto.ruta)
+  else URL.revokeObjectURL(foto.url)
   fotos.value.splice(i, 1)
 }
 
-const paso1Listo = computed(() => fotos.value.length > 0 && form.titulo.trim().length >= 10 && !!form.categoria && !!form.descripcion.trim())
-const paso2Listo = computed(() => form.precioSalida > 0 && !!form.fechaInicio)
+const inicio = computed(() => (yaEmpezo.value ? new Date(yaEmpezo.value) : form.empiezaAhora ? new Date() : new Date(form.fechaInicio)))
+const paso1Listo = computed(() => fotos.value.length > 0 && form.titulo.trim().length >= 10 && !!form.categoriaId && !!form.descripcion.trim())
+const paso2Listo = computed(() => form.precioSalida > 0 && (form.empiezaAhora || !!form.fechaInicio))
 
-const fechaCierre = computed(() => new Date(new Date(form.fechaInicio).getTime() + form.duracion * 86400000))
-
-const empiezaDespues = computed(() => new Date(form.fechaInicio).getTime() > Date.now())
+const fechaCierre = computed(() => new Date(inicio.value.getTime() + form.duracion * 86400000))
+const empiezaDespues = computed(() => !form.empiezaAhora && inicio.value.getTime() > Date.now())
 const ejemploVenta = computed(() => form.precioReserva || form.precioSalida || 9000)
 
 const vistaPrevia = computed(() => ({
   id: 0,
   titulo: form.titulo || 'Título de tu artículo',
-  foto: fotos.value[0]?.url ?? '',
+  foto: fotos.value[0]?.url ?? null,
   precioSalida: form.precioSalida || 0,
+  pujaActual: null,
+  numeroPujas: 0,
+  fechaInicio: new Date().toISOString(),
   fechaCierre: fechaCierre.value.toISOString(),
-  pujas: [],
 }))
 
-// Reglas del formulario; la API repetirá estas validaciones.
+// Las mismas reglas que valida la API; aquí solo evitan un viaje al servidor.
 function validar() {
   const e = {}
   if (!fotos.value.length) e.fotos = 'Agrega al menos una foto.'
   if (form.titulo.trim().length < 10) e.titulo = 'Escribe un título de al menos 10 caracteres.'
-  if (!form.categoria) e.categoria = 'Elige una categoría.'
+  if (!form.categoriaId) e.categoriaId = 'Elige una categoría.'
   if (!form.descripcion.trim()) e.descripcion = 'Describe el artículo.'
   if (!(form.precioSalida > 0)) e.precioSalida = 'El precio de salida debe ser mayor que 0.'
-  if (form.precioReserva != null && form.precioReserva !== '' && form.precioReserva < form.precioSalida) e.precioReserva = 'La reserva no puede ser menor que el precio de salida.'
-  if (new Date(form.fechaInicio).getTime() < Date.now() - 60000) e.fechaInicio = 'La fecha de inicio no puede estar en el pasado.'
-  if (form.comprarYa && !(form.precioComprarYa > (form.precioReserva || form.precioSalida || 0))) e.precioComprarYa = 'El precio de «Comprar ya» debe ser mayor que el de salida y el de reserva.'
+  if (form.precioReserva && form.precioReserva < form.precioSalida) e.precioReserva = 'La reserva no puede ser menor que el precio de salida.'
+  if (!yaEmpezo.value && !form.empiezaAhora && !(new Date(form.fechaInicio).getTime() >= Date.now() - 60000)) e.fechaInicio = 'La fecha de inicio no puede estar en el pasado.'
+  if (fechaCierre.value.getTime() <= Date.now()) e.duracion = 'Con esa duración la subasta ya habría terminado. Elige más días.'
   if (!form.retiroEnPersona && !form.envioADomicilio) e.entrega = 'Elige al menos una forma de entrega.'
   errores.value = e
   return !Object.keys(e).length
 }
 
-function publicar() {
-  if (!validar()) return
-  const id = Math.max(...subastas.map(s => s.id)) + 1
-  subastas.push({
-    id,
+function datosDeLaSubasta() {
+  return {
     titulo: form.titulo.trim(),
-    categoria: form.categoria.split(' › ')[0],
-    subcategoria: form.categoria.split(' › ')[1],
+    descripcion: form.descripcion.trim(),
     condicion: form.condicion,
-    descripcion: [form.descripcion.trim()],
-    foto: fotos.value[0].url,
-    fotos: fotos.value.map(f => f.url),
-    vendedor: { id: usuarioActual.id, nombre: `${usuarioActual.nombre} ${usuarioActual.apellido}`, iniciales: usuarioActual.iniciales, calificacion: 5, ventas: 0, ubicacion: 'Santo Domingo' },
+    categoriaId: Number(form.categoriaId),
     precioSalida: form.precioSalida,
     incrementoMinimo: form.incrementoMinimo,
     precioReserva: form.precioReserva || null,
-    fechaCierre: fechaCierre.value.toISOString(),
-    extensionFinal: form.extenderAlFinal,
-    pujas: [],
-  })
-  router.push(`/subastas/${id}`)
+    fechaInicio: inicio.value.toISOString(),
+    duracionDias: form.duracion,
+    extenderAlFinal: form.extenderAlFinal,
+    permiteRetiro: form.retiroEnPersona,
+    permiteEnvio: form.envioADomicilio,
+  }
 }
 
-function guardarBorrador() {
-  borradorGuardado.value = true
-  setTimeout(() => { borradorGuardado.value = false }, 4000)
+function subirNuevas(id) {
+  const nuevas = fotos.value.filter(f => f.archivo)
+  if (!nuevas.length) return null
+  const datos = new FormData()
+  nuevas.forEach(f => datos.append('fotos', f.archivo, f.nombre))
+  return api(`/api/subastas/${id}/imagenes`, { metodo: 'POST', formulario: datos })
+}
+
+// Guarda los datos, borra las fotos quitadas y sube las nuevas. La API exige siempre al menos
+// una foto y como máximo 10, así que se borra antes de subir salvo la última foto guardada.
+async function guardarCambios() {
+  await api(`/api/subastas/${editandoId}`, { metodo: 'PUT', cuerpo: datosDeLaSubasta() })
+  const guardadas = fotos.value.filter(f => f.ruta).length + quitadas.value.length
+  const pendientes = [...quitadas.value]
+  const despues = guardadas === pendientes.length ? [pendientes.pop()] : []
+  for (const ruta of pendientes) await api(`/api/subastas/${editandoId}/imagenes?ruta=${encodeURIComponent(ruta)}`, { metodo: 'DELETE' })
+  quitadas.value = despues
+  const subidas = await subirNuevas(editandoId)
+  if (subidas) fotos.value = subidas.map((ruta, i) => ({ nombre: `Foto ${i + 1}`, url: urlFoto(ruta), ruta }))
+  for (const ruta of despues) await api(`/api/subastas/${editandoId}/imagenes?ruta=${encodeURIComponent(ruta)}`, { metodo: 'DELETE' })
+  quitadas.value = []
+  router.push(`/subastas/${editandoId}`)
+}
+
+async function publicar() {
+  errorGeneral.value = ''
+  if (publicando.value || !validar()) return
+  publicando.value = true
+  if (editandoId) {
+    try {
+      await guardarCambios()
+    } catch (e) {
+      errores.value = { ...errores.value, ...e.errores }
+      errorGeneral.value = e.message
+    } finally {
+      publicando.value = false
+    }
+    return
+  }
+  try {
+    // Si la subasta ya se creó y fallaron las fotos, se reintenta solo la subida.
+    creada.value ??= await api('/api/subastas', { metodo: 'POST', cuerpo: datosDeLaSubasta() })
+    await subirNuevas(creada.value.id)
+    router.push(`/subastas/${creada.value.id}`)
+  } catch (e) {
+    errores.value = { ...errores.value, ...e.errores }
+    errorGeneral.value = creada.value
+      ? `La subasta #${creada.value.id} se publicó, pero las fotos no se subieron: ${e.message} Vuelve a intentarlo.`
+      : e.message
+  } finally {
+    publicando.value = false
+  }
 }
 </script>
 
@@ -130,10 +202,10 @@ function guardarBorrador() {
   <div class="contenedor py-4 d-flex flex-column gap-4">
     <div class="d-flex justify-content-between align-items-end">
       <div>
-        <h1 class="fw-bold mb-1 titulo">Publicar un artículo</h1>
-        <p class="texto-gris mb-0">Completa los datos. Puedes guardar un borrador y terminar después.</p>
+        <h1 class="fw-bold mb-1 titulo">{{ editandoId ? 'Editar subasta' : 'Publicar un artículo' }}</h1>
+        <p v-if="editandoId" class="texto-gris mb-0">Puedes corregir la subasta mientras nadie haya pujado.</p>
+        <p v-else class="texto-gris mb-0">Completa los datos y publica. La subasta queda visible en cuanto empieza.</p>
       </div>
-      <a href="#" class="d-none d-lg-inline text-decoration-underline" @click.prevent>Reglas para vender</a>
     </div>
 
     <div class="panel pasos d-none d-lg-flex">
@@ -185,18 +257,21 @@ function guardarBorrador() {
           <div class="row g-3">
             <div class="col-md">
               <label for="categoria" class="form-label">Categoría</label>
-              <select id="categoria" v-model="form.categoria" class="form-select" :class="{ 'is-invalid': errores.categoria }">
+              <select id="categoria" v-model="form.categoriaId" class="form-select" :class="{ 'is-invalid': errores.categoriaId }">
                 <option value="" disabled>Elige una categoría</option>
-                <optgroup v-for="c in categorias.filter(c => subcategorias[c.nombre])" :key="c.id" :label="c.nombre">
-                  <option v-for="sc in subcategorias[c.nombre]" :key="sc" :value="`${c.nombre} › ${sc}`">{{ c.nombre }} › {{ sc }}</option>
-                </optgroup>
+                <template v-for="c in categorias" :key="c.id">
+                  <optgroup v-if="c.subcategorias.length" :label="c.nombre">
+                    <option v-for="sc in c.subcategorias" :key="sc.id" :value="sc.id">{{ c.nombre }} › {{ sc.nombre }}</option>
+                  </optgroup>
+                  <option v-else :value="c.id">{{ c.nombre }}</option>
+                </template>
               </select>
-              <div class="invalid-feedback">{{ errores.categoria }}</div>
+              <div class="invalid-feedback">{{ errores.categoriaId }}</div>
             </div>
             <div class="col-md">
               <label for="condicion" class="form-label">Estado</label>
               <select id="condicion" v-model="form.condicion" class="form-select">
-                <option v-for="c in condiciones" :key="c">{{ c }}</option>
+                <option v-for="(texto, valor) in CONDICIONES" :key="valor" :value="valor">{{ texto }}</option>
               </select>
             </div>
           </div>
@@ -238,9 +313,20 @@ function guardarBorrador() {
           </div>
           <div class="row g-3">
             <div class="col-md-5">
-              <label for="inicio" class="form-label">Fecha de inicio</label>
-              <input id="inicio" v-model="form.fechaInicio" type="datetime-local" class="form-control" :class="{ 'is-invalid': errores.fechaInicio }" />
+              <span class="form-label d-block">Inicio</span>
+              <p v-if="yaEmpezo" class="mb-0 pt-1">Empezó el {{ fechaConHora(yaEmpezo) }}</p>
+              <template v-else>
+              <div class="form-check form-check-inline">
+                <input id="inicio-ahora" v-model="form.empiezaAhora" class="form-check-input" type="radio" :value="true" />
+                <label class="form-check-label" for="inicio-ahora">Al publicar</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input id="inicio-fecha" v-model="form.empiezaAhora" class="form-check-input" type="radio" :value="false" />
+                <label class="form-check-label" for="inicio-fecha">En una fecha</label>
+              </div>
+              <input v-if="!form.empiezaAhora" id="inicio" v-model="form.fechaInicio" type="datetime-local" aria-label="Fecha de inicio" class="form-control mt-2" :class="{ 'is-invalid': errores.fechaInicio }" />
               <div class="invalid-feedback">{{ errores.fechaInicio }}</div>
+              </template>
             </div>
             <fieldset class="col-md">
               <legend class="form-label">Duración</legend>
@@ -250,24 +336,13 @@ function guardarBorrador() {
                   <label class="form-check-label" :for="`dur-${d}`">{{ d }} {{ d === 1 ? 'día' : 'días' }}</label>
                 </div>
               </div>
+              <div v-if="errores.duracion" class="text-danger texto-pequeno">{{ errores.duracion }}</div>
             </fieldset>
           </div>
           <hr class="my-1" />
           <div class="form-check mb-0">
             <input id="extender" v-model="form.extenderAlFinal" type="checkbox" class="form-check-input" />
             <label for="extender" class="form-check-label">Extender 2 minutos si alguien puja al final</label>
-          </div>
-          <div class="form-check form-switch mb-0">
-            <input id="comprar-ya" v-model="form.comprarYa" type="checkbox" role="switch" class="form-check-input" />
-            <label for="comprar-ya" class="form-check-label">Permitir «Comprar ya» por un precio fijo</label>
-          </div>
-          <div v-if="form.comprarYa" class="col-md-4">
-            <label for="precio-ya" class="form-label">Precio de «Comprar ya»</label>
-            <div class="input-group has-validation">
-              <span class="input-group-text">RD$</span>
-              <input id="precio-ya" v-model.number="form.precioComprarYa" type="number" min="1" step="50" class="form-control" :class="{ 'is-invalid': errores.precioComprarYa }" />
-              <div class="invalid-feedback">{{ errores.precioComprarYa }}</div>
-            </div>
           </div>
           <div class="d-flex flex-column gap-2">
             <span class="fw-medium texto-14">Entrega</span>
@@ -285,17 +360,16 @@ function guardarBorrador() {
           </div>
         </section>
 
+        <div v-if="errorGeneral" class="alert alert-danger mb-0" role="alert">{{ errorGeneral }}</div>
         <div class="d-flex gap-3 flex-wrap align-items-center">
-          <button type="submit" class="btn btn-primary btn-lg">Publicar subasta</button>
-          <button type="button" class="btn btn-light btn-lg" @click="guardarBorrador">Guardar borrador</button>
-          <RouterLink to="/" class="btn btn-link btn-lg">Cancelar</RouterLink>
-          <span v-if="borradorGuardado" class="text-success texto-pequeno">Borrador guardado.</span>
+          <button type="submit" class="btn btn-primary btn-lg" :disabled="publicando || cargandoEdicion">{{ publicando ? 'Guardando…' : editandoId ? 'Guardar cambios' : 'Publicar subasta' }}</button>
+          <RouterLink :to="editandoId ? `/subastas/${editandoId}` : '/'" class="btn btn-link btn-lg">Cancelar</RouterLink>
         </div>
       </form>
 
       <aside class="vista d-flex flex-column gap-3">
         <strong class="fs-6">Así se verá tu subasta</strong>
-        <SubastaCard :subasta="vistaPrevia" :ahora="Date.now()" :texto-tiempo="empiezaDespues ? `Empieza el ${diaCorto(form.fechaInicio)}` : ''" />
+        <SubastaCard :subasta="vistaPrevia" :ahora="Date.now()" :texto-tiempo="empiezaDespues ? `Empieza el ${diaCorto(inicio)}` : ''" />
         <div class="alerta-info">
           <Info :size="20" class="flex-shrink-0" />
           <div>

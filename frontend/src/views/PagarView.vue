@@ -1,152 +1,138 @@
 <script setup>
-import { computed, reactive, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { CircleCheck, CreditCard, Landmark, MapPin, ShieldCheck, Truck } from 'lucide-vue-next'
-import { buscarSubasta, pujaActual } from '../data/subastas'
+import { CircleCheck, Mail, MapPin, MessageCircle, Phone, Truck } from 'lucide-vue-next'
+import AvatarIniciales from '../components/AvatarIniciales.vue'
+import { api, urlFoto } from '../api/cliente'
 import { fechaConHora, rd } from '../utils/formato'
 
-// Pantalla 08 del Figma. Es una maqueta: no se conecta con ninguna pasarela ni guarda datos de tarjeta.
+// Pantalla 08 del Figma, adaptada: Pújalo no cobra en línea. El ganador y el vendedor ven los datos
+// de contacto del otro (GET /api/subastas/{id}/contacto) y acuerdan el pago y la entrega.
 const route = useRoute()
-const subasta = computed(() => buscarSubasta(route.params.id))
-const ganadora = computed(() => (subasta.value ? pujaActual(subasta.value) ?? 0 : 0))
-const limitePago = computed(() => new Date(new Date(subasta.value.fechaCierre).getTime() + 48 * 3600000))
+const subasta = ref(null)
+const contacto = ref(null)
+const error = ref('')
 
-const provincias = ['Distrito Nacional', 'Santo Domingo', 'Santiago', 'La Vega', 'Puerto Plata', 'San Cristóbal', 'La Romana', 'San Pedro de Macorís']
-const form = reactive({ entrega: 'envio', direccion: '', provincia: 'Distrito Nacional', pago: 'tarjeta', tarjeta: '', vence: '', cvv: '', nombre: '' })
-const errores = ref({})
-const demostracion = ref(false)
-
-const envio = computed(() => (form.entrega === 'envio' ? 350 : 0))
-const cargoServicio = 0
-const total = computed(() => ganadora.value + envio.value + cargoServicio)
-
-function formatearTarjeta(v) {
-  return v.replace(/\D/g, '').slice(0, 16).replace(/(\d{4})(?=\d)/g, '$1 ')
-}
-
-function formatearVence(v) {
-  const d = v.replace(/\D/g, '').slice(0, 4)
-  return d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d
-}
-
-function pagar() {
-  const e = {}
-  if (form.entrega === 'envio' && !form.direccion.trim()) e.direccion = 'Escribe la dirección de entrega.'
-  if (form.pago === 'tarjeta') {
-    if (form.tarjeta.replace(/\D/g, '').length !== 16) e.tarjeta = 'El número de tarjeta tiene 16 dígitos.'
-    if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(form.vence)) e.vence = 'Usa el formato MM/AA.'
-    if (!/^\d{3,4}$/.test(form.cvv)) e.cvv = 'De 3 o 4 dígitos.'
-    if (!form.nombre.trim()) e.nombre = 'Como aparece en la tarjeta.'
+watch(() => route.params.id, async id => {
+  subasta.value = contacto.value = null
+  error.value = ''
+  try {
+    ;[subasta.value, contacto.value] = await Promise.all([api(`/api/subastas/${id}`), api(`/api/subastas/${id}/contacto`)])
+  } catch (e) {
+    error.value = e.message
   }
-  errores.value = e
-  demostracion.value = !Object.keys(e).length
+}, { immediate: true })
+
+const soyComprador = computed(() => contacto.value?.rol === 'comprador')
+const limitePago = computed(() => contacto.value?.plazoPago)
+const confirmando = ref(false)
+
+async function confirmarPago() {
+  try {
+    await api(`/api/subastas/${route.params.id}/confirmar-pago`, { metodo: 'POST' })
+    contacto.value = await api(`/api/subastas/${route.params.id}/contacto`)
+    confirmando.value = false
+  } catch (e) {
+    error.value = e.message
+  }
 }
+const otro = computed(() => contacto.value?.contraparte)
+const iniciales = computed(() => (otro.value?.nombre ?? '').split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase())
+
+// Los teléfonos dominicanos (809, 829, 849) tienen 10 dígitos; WhatsApp los espera con el 1 delante.
+const whatsapp = computed(() => {
+  const digitos = (otro.value?.telefono ?? '').replace(/\D/g, '')
+  if (digitos.length === 10) return `https://wa.me/1${digitos}`
+  return digitos.length >= 11 ? `https://wa.me/${digitos}` : null
+})
+const mensaje = computed(() => (soyComprador.value
+  ? `Hola, gané tu subasta «${subasta.value?.titulo}» en Pújalo por ${rd(contacto.value?.monto ?? 0)}. ¿Cómo coordinamos el pago y la entrega?`
+  : `Hola, soy el vendedor de «${subasta.value?.titulo}» en Pújalo. Ganaste con ${rd(contacto.value?.monto ?? 0)}. ¿Cómo coordinamos el pago y la entrega?`))
 </script>
 
 <template>
-  <div v-if="subasta" class="contenedor py-4 d-flex flex-column gap-4">
-    <div class="alerta-exito">
-      <CircleCheck :size="20" class="flex-shrink-0" />
-      <div>
-        <strong class="d-block">¡Ganaste la subasta de «{{ subasta.titulo }}»!</strong>
-        Tienes hasta el {{ fechaConHora(limitePago) }} para pagar. Si no pagas a tiempo, la subasta pasa al segundo postor.
-      </div>
+  <div class="contenedor py-4 d-flex flex-column gap-4">
+    <div v-if="error" class="panel p-4 d-flex flex-column gap-3 align-items-start">
+      <h1 class="fs-4 fw-bold mb-0">No podemos mostrar esta compra</h1>
+      <p class="texto-gris mb-0">{{ error }}</p>
+      <RouterLink :to="`/subastas/${route.params.id}`" class="btn btn-primary">Volver a la subasta</RouterLink>
     </div>
-    <h1 class="fw-bold mb-0 titulo">Completa tu compra</h1>
+    <p v-else-if="!contacto" class="texto-gris">Cargando…</p>
 
-    <div class="dos-columnas">
-      <form class="d-flex flex-column gap-4" novalidate @submit.prevent="pagar">
-        <section class="panel d-flex flex-column gap-3">
-          <h2 class="subtitulo">1. Entrega</h2>
-          <div class="opciones">
-            <label class="opcion" :class="{ activa: form.entrega === 'retiro' }">
-              <input v-model="form.entrega" type="radio" value="retiro" class="form-check-input mt-0" />
-              <MapPin :size="22" class="icono" />
-              <span class="flex-grow-1"><span class="fw-medium d-block">Retiro en persona</span><small class="texto-gris">{{ subasta.vendedor.ubicacion }}. Coordinas la hora con el vendedor.</small></span>
-              <strong>Gratis</strong>
-            </label>
-            <label class="opcion" :class="{ activa: form.entrega === 'envio' }">
-              <input v-model="form.entrega" type="radio" value="envio" class="form-check-input mt-0" />
-              <Truck :size="22" class="icono" />
-              <span class="flex-grow-1"><span class="fw-medium d-block">Envío a domicilio</span><small class="texto-gris">Llega en 1 a 2 días laborables.</small></span>
-              <strong>RD$ 350</strong>
-            </label>
-          </div>
-          <div v-if="form.entrega === 'envio'" class="row g-3">
-            <div class="col-md">
-              <label for="direccion" class="form-label">Dirección</label>
-              <input id="direccion" v-model="form.direccion" maxlength="150" autocomplete="street-address" class="form-control" :class="{ 'is-invalid': errores.direccion }" placeholder="Calle El Conde 152, apto. 3B" />
-              <div class="invalid-feedback">{{ errores.direccion }}</div>
-            </div>
-            <div class="col-md">
-              <label for="provincia" class="form-label">Provincia</label>
-              <select id="provincia" v-model="form.provincia" class="form-select">
-                <option v-for="p in provincias" :key="p">{{ p }}</option>
-              </select>
-            </div>
-          </div>
-        </section>
+    <template v-else>
+      <div class="alerta-exito">
+        <CircleCheck :size="20" class="flex-shrink-0" />
+        <div v-if="soyComprador">
+          <strong class="d-block">¡Ganaste la subasta de «{{ subasta.titulo }}»!</strong>
+          <template v-if="contacto.pagoConfirmado">El vendedor confirmó que recibió tu pago.</template>
+          <template v-else-if="limitePago">Tienes hasta el {{ fechaConHora(limitePago) }} para ponerte de acuerdo con el vendedor y pagar. Si no, la subasta pasa al siguiente postor.</template>
+        </div>
+        <div v-else>
+          <strong class="d-block">Vendiste «{{ subasta.titulo }}»</strong>
+          <template v-if="contacto.pagoConfirmado">Confirmaste el pago. Solo falta la entrega.</template>
+          <template v-else-if="limitePago">Escríbele al comprador para acordar el pago. Tiene hasta el {{ fechaConHora(limitePago) }}; si no paga, la subasta pasa al siguiente postor.</template>
+        </div>
+      </div>
+      <h1 class="fw-bold mb-0 titulo">Coordina el pago y la entrega</h1>
 
-        <section class="panel d-flex flex-column gap-3">
-          <h2 class="subtitulo">2. Pago</h2>
-          <div class="opciones">
-            <label class="opcion" :class="{ activa: form.pago === 'tarjeta' }">
-              <input v-model="form.pago" type="radio" value="tarjeta" class="form-check-input mt-0" />
-              <CreditCard :size="22" class="icono" />
-              <span class="flex-grow-1"><span class="fw-medium d-block">Tarjeta de crédito o débito</span><small class="texto-gris">Visa o Mastercard</small></span>
-            </label>
-            <label class="opcion" :class="{ activa: form.pago === 'transferencia' }">
-              <input v-model="form.pago" type="radio" value="transferencia" class="form-check-input mt-0" />
-              <Landmark :size="22" class="icono" />
-              <span class="flex-grow-1"><span class="fw-medium d-block">Transferencia bancaria</span><small class="texto-gris">Se confirma en 1 a 24 horas</small></span>
-            </label>
-          </div>
-          <template v-if="form.pago === 'tarjeta'">
-            <div>
-              <label for="tarjeta" class="form-label">Número de tarjeta</label>
-              <input id="tarjeta" :value="form.tarjeta" inputmode="numeric" autocomplete="off" class="form-control" :class="{ 'is-invalid': errores.tarjeta }" placeholder="0000 0000 0000 0000" @input="form.tarjeta = formatearTarjeta($event.target.value)" />
-              <div class="invalid-feedback">{{ errores.tarjeta }}</div>
+      <div class="dos-columnas">
+        <div class="d-flex flex-column gap-4">
+          <section class="panel d-flex flex-column gap-3">
+            <h2 class="subtitulo">{{ soyComprador ? 'Vendedor' : 'Comprador' }}</h2>
+            <div class="d-flex align-items-center gap-3">
+              <AvatarIniciales :iniciales="iniciales" :tam="48" />
+              <div class="fw-bold fs-6">{{ otro.nombre }}</div>
             </div>
-            <div class="row g-3">
-              <div class="col-md-3">
-                <label for="vence" class="form-label">Vence</label>
-                <input id="vence" :value="form.vence" inputmode="numeric" autocomplete="off" class="form-control" :class="{ 'is-invalid': errores.vence }" placeholder="MM/AA" @input="form.vence = formatearVence($event.target.value)" />
-                <div class="invalid-feedback">{{ errores.vence }}</div>
+            <div class="d-flex flex-wrap gap-2">
+              <a :href="`mailto:${otro.correo}?subject=${encodeURIComponent(`Subasta #${subasta.id} en Pújalo`)}&body=${encodeURIComponent(mensaje)}`" class="btn btn-light d-inline-flex align-items-center gap-2"><Mail :size="16" /> {{ otro.correo }}</a>
+              <a v-if="otro.telefono" :href="`tel:${otro.telefono}`" class="btn btn-light d-inline-flex align-items-center gap-2"><Phone :size="16" /> {{ otro.telefono }}</a>
+              <a v-if="whatsapp" :href="`${whatsapp}?text=${encodeURIComponent(mensaje)}`" target="_blank" rel="noopener" class="btn btn-success d-inline-flex align-items-center gap-2"><MessageCircle :size="16" /> WhatsApp</a>
+            </div>
+          </section>
+
+          <section class="panel d-flex flex-column gap-3">
+            <h2 class="subtitulo">Entrega acordada en la publicación</h2>
+            <div class="opciones">
+              <div v-if="subasta.permiteRetiro" class="opcion">
+                <MapPin :size="22" class="icono" />
+                <span class="flex-grow-1"><span class="fw-medium d-block">Retiro en persona</span><small class="texto-gris">Acuerden el lugar y la hora.</small></span>
               </div>
-              <div class="col-md-3">
-                <label for="cvv" class="form-label">CVV</label>
-                <input id="cvv" v-model="form.cvv" type="password" inputmode="numeric" maxlength="4" autocomplete="off" class="form-control" :class="{ 'is-invalid': errores.cvv }" />
-                <div class="invalid-feedback">{{ errores.cvv }}</div>
+              <div v-if="subasta.permiteEnvio" class="opcion">
+                <Truck :size="22" class="icono" />
+                <span class="flex-grow-1"><span class="fw-medium d-block">Envío a domicilio</span><small class="texto-gris">El costo del envío lo acuerdan entre ustedes.</small></span>
               </div>
-              <div class="col-md">
-                <label for="nombre" class="form-label">Nombre en la tarjeta</label>
-                <input id="nombre" v-model="form.nombre" maxlength="60" autocomplete="off" class="form-control text-uppercase" :class="{ 'is-invalid': errores.nombre }" />
-                <div class="invalid-feedback">{{ errores.nombre }}</div>
+            </div>
+            <p class="texto-gris mb-0">Recomendación: revisa el artículo antes de pagar y, si es en persona, reúnanse en un lugar público.</p>
+          </section>
+        </div>
+
+        <aside class="panel d-flex flex-column gap-3 resumen">
+          <h2 class="subtitulo">Resumen</h2>
+          <RouterLink :to="`/subastas/${subasta.id}`" class="d-flex gap-3 align-items-center text-body">
+            <img v-if="subasta.fotos.length" :src="urlFoto(subasta.fotos[0])" alt="" class="miniatura" />
+            <div><div class="fw-medium texto-14">{{ subasta.titulo }}</div><small class="texto-gris">Subasta #{{ subasta.id }}</small></div>
+          </RouterLink>
+          <hr class="my-0" />
+          <div class="d-flex justify-content-between"><span class="texto-gris">Puja ganadora</span><span class="fw-medium">{{ rd(contacto.monto) }}</span></div>
+          <div class="d-flex justify-content-between"><span class="texto-gris">Pujas recibidas</span><span class="fw-medium">{{ subasta.numeroPujas }}</span></div>
+          <hr class="my-0" />
+          <div class="d-flex justify-content-between fs-5 fw-bold"><span>{{ soyComprador ? 'A pagar' : 'A cobrar' }}</span><span>{{ rd(contacto.monto) }}</span></div>
+          <small class="texto-gris">Sin contar el envío, si lo hay.</small>
+          <div v-if="contacto.pagoConfirmado" class="text-success fw-medium d-flex align-items-center gap-2"><CircleCheck :size="18" /> Pago confirmado</div>
+          <template v-else-if="!soyComprador">
+            <button v-if="!confirmando" type="button" class="btn btn-primary btn-lg" @click="confirmando = true">Confirmar pago recibido</button>
+            <div v-else class="d-flex flex-column gap-2">
+              <span class="texto-14">¿Ya recibiste {{ rd(contacto.monto) }}? Después de confirmar no se puede deshacer.</span>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-light flex-fill" @click="confirmando = false">No</button>
+                <button type="button" class="btn btn-primary flex-fill" @click="confirmarPago">Sí, ya me pagó</button>
               </div>
             </div>
           </template>
-          <p v-else class="texto-gris mb-0">Al confirmar, te mostramos la cuenta del vendedor para hacer la transferencia.</p>
-        </section>
-        <button type="submit" class="d-none" />
-      </form>
-
-      <aside class="panel d-flex flex-column gap-3 resumen">
-        <h2 class="subtitulo">Resumen</h2>
-        <div class="d-flex gap-3 align-items-center">
-          <img v-if="subasta.foto" :src="subasta.foto" alt="" class="miniatura" />
-          <div><div class="fw-medium texto-14">{{ subasta.titulo }}</div><small class="texto-gris">Vendedor: {{ subasta.vendedor.nombre }}</small></div>
-        </div>
-        <hr class="my-0" />
-        <div class="d-flex justify-content-between"><span class="texto-gris">Puja ganadora</span><span class="fw-medium">{{ rd(ganadora) }}</span></div>
-        <div class="d-flex justify-content-between"><span class="texto-gris">Envío</span><span class="fw-medium">{{ rd(envio) }}</span></div>
-        <div class="d-flex justify-content-between"><span class="texto-gris">Cargo por servicio</span><span class="fw-medium">{{ rd(cargoServicio) }}</span></div>
-        <hr class="my-0" />
-        <div class="d-flex justify-content-between fs-5 fw-bold"><span>Total</span><span>{{ rd(total) }}</span></div>
-        <button type="button" class="btn btn-primary btn-lg" @click="pagar">Pagar {{ rd(total) }}</button>
-        <div v-if="demostracion" class="alert alert-info mb-0 py-2 texto-14">Maqueta: no se procesó ningún pago.</div>
-        <div class="d-flex gap-2 texto-gris nota"><ShieldCheck :size="16" class="flex-shrink-0 mt-1" /> El vendedor recibe el dinero cuando confirmes que te llegó el artículo.</div>
-      </aside>
-    </div>
+          <small v-else class="texto-gris">Cuando pagues, el vendedor lo confirma aquí.</small>
+        </aside>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -202,7 +188,6 @@ function pagar() {
   border: 1px solid var(--pj-borde);
   border-radius: 8px;
   background: #fff;
-  cursor: pointer;
 }
 
 .opcion .icono {

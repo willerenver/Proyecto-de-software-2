@@ -1,13 +1,15 @@
 <script setup>
 import { ref } from 'vue'
 import { X } from 'lucide-vue-next'
-import { pujaActual } from '../data/subastas'
+import { urlFoto } from '../api/cliente'
 import { rd, tiempoRestante } from '../utils/formato'
 
-const props = defineProps({
+// Recibe la subasta como la devuelve GET /api/subastas/{id}.
+defineProps({
   subasta: { type: Object, required: true },
   monto: { type: Number, required: true },
   ahora: { type: Number, required: true },
+  enviando: { type: Boolean, default: false },
 })
 const emit = defineEmits(['cancelar', 'confirmar'])
 const acepta = ref(true)
@@ -22,14 +24,14 @@ const acepta = ref(true)
       </header>
       <div class="cuerpo">
         <div class="d-flex gap-3 align-items-center">
-          <img :src="subasta.foto" alt="" />
+          <img v-if="subasta.fotos.length" :src="urlFoto(subasta.fotos[0])" alt="" />
           <div>
             <div class="fw-medium">{{ subasta.titulo }}</div>
             <div class="texto-pequeno texto-gris">Subasta #{{ subasta.id }} · termina en {{ tiempoRestante(subasta.fechaCierre, ahora) }}</div>
           </div>
         </div>
         <div class="montos">
-          <div class="d-flex justify-content-between"><span class="texto-gris">Puja actual</span><span class="fw-medium">{{ rd(pujaActual(subasta) ?? subasta.precioSalida) }}</span></div>
+          <div class="d-flex justify-content-between"><span class="texto-gris">Puja actual</span><span class="fw-medium">{{ rd(subasta.pujaActual ?? subasta.precioSalida) }}</span></div>
           <div class="d-flex justify-content-between align-items-center"><span class="texto-gris">Tu puja</span><strong class="fs-5">{{ rd(monto) }}</strong></div>
         </div>
         <p class="texto-gris mb-0">Si ganas, te comprometes a pagar dentro de las 48 horas siguientes al cierre. Una puja no se puede retirar.</p>
@@ -40,7 +42,7 @@ const acepta = ref(true)
       </div>
       <footer>
         <button type="button" class="btn btn-light" @click="emit('cancelar')">Cancelar</button>
-        <button type="button" class="btn btn-pujar" :disabled="!acepta" @click="emit('confirmar')">Confirmar puja de {{ rd(monto) }}</button>
+        <button type="button" class="btn btn-pujar" :disabled="!acepta || enviando" @click="emit('confirmar')">{{ enviando ? 'Registrando…' : `Confirmar puja de ${rd(monto)}` }}</button>
       </footer>
     </div>
   </div>

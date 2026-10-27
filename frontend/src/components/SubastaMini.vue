@@ -1,6 +1,6 @@
 <script setup>
 import { Clock } from 'lucide-vue-next'
-import { pujaActual } from '../data/subastas'
+import { urlFoto } from '../api/cliente'
 import { rd, tiempoRestante } from '../utils/formato'
 
 defineProps({
@@ -11,10 +11,11 @@ defineProps({
 
 <template>
   <RouterLink :to="`/subastas/${subasta.id}`" class="mini">
-    <img :src="subasta.foto" :alt="subasta.titulo" />
+    <img v-if="subasta.foto" :src="urlFoto(subasta.foto)" :alt="subasta.titulo" />
+    <span v-else class="sin-foto" />
     <div class="flex-grow-1 min-w-0">
       <div class="titulo">{{ subasta.titulo }}</div>
-      <div class="fw-bold">{{ rd(pujaActual(subasta) ?? subasta.precioSalida) }}</div>
+      <div class="fw-bold">{{ rd(subasta.pujaActual ?? subasta.precioSalida) }}</div>
       <div class="restante"><Clock :size="12" /> Termina en {{ tiempoRestante(subasta.fechaCierre, ahora) }}</div>
     </div>
   </RouterLink>
@@ -28,12 +29,17 @@ defineProps({
   color: var(--pj-texto);
 }
 
-.mini img {
+.mini img,
+.sin-foto {
   width: 64px;
   height: 64px;
   border-radius: 6px;
   object-fit: cover;
   flex-shrink: 0;
+}
+
+.sin-foto {
+  background: #e9ecef;
 }
 
 .titulo {

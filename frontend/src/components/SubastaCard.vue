@@ -1,11 +1,11 @@
 <script setup>
 import { computed } from 'vue'
-import { Clock, Heart } from 'lucide-vue-next'
+import { Clock, Image } from 'lucide-vue-next'
 import EstadoBadge from './EstadoBadge.vue'
-import { pujaActual } from '../data/subastas'
-import { cierraPronto, rd, tiempoRestante } from '../utils/formato'
+import { urlFoto } from '../api/cliente'
+import { cierraPronto, diaCorto, rd, tiempoRestante } from '../utils/formato'
 
-// Componente «Card de subasta» del Figma.
+// Componente «Card de subasta» del Figma. Recibe una subasta como la devuelve GET /api/subastas.
 const props = defineProps({
   subasta: { type: Object, required: true },
   ahora: { type: Number, required: true },
@@ -13,31 +13,33 @@ const props = defineProps({
   textoTiempo: { type: String, default: '' },
 })
 
-const urgente = computed(() => !props.textoTiempo && cierraPronto(props.subasta.fechaCierre, props.ahora))
-const monto = computed(() => pujaActual(props.subasta) ?? props.subasta.precioSalida)
+const programada = computed(() => new Date(props.subasta.fechaInicio).getTime() > props.ahora)
+const urgente = computed(() => !props.textoTiempo && !programada.value && cierraPronto(props.subasta.fechaCierre, props.ahora))
+const monto = computed(() => props.subasta.pujaActual ?? props.subasta.precioSalida)
+const tiempo = computed(() => props.textoTiempo || (programada.value ? `Empieza el ${diaCorto(props.subasta.fechaInicio)}` : tiempoRestante(props.subasta.fechaCierre, props.ahora)))
 const enlace = computed(() => (props.subasta.id ? `/subastas/${props.subasta.id}` : ''))
 </script>
 
 <template>
   <article class="card-subasta">
     <component :is="enlace ? 'RouterLink' : 'div'" :to="enlace || undefined" class="imagen">
-      <img v-if="subasta.foto" :src="subasta.foto" :alt="subasta.titulo" loading="lazy" />
+      <img v-if="subasta.foto" :src="urlFoto(subasta.foto)" :alt="subasta.titulo" loading="lazy" />
+      <span v-else class="sin-foto"><Image :size="32" /></span>
       <EstadoBadge v-if="urgente" estado="Cierra pronto" class="etiqueta" />
-      <button class="favorito" type="button" aria-label="Seguir esta subasta" @click.prevent><Heart :size="16" /></button>
     </component>
     <div class="cuerpo">
       <component :is="enlace ? 'RouterLink' : 'div'" :to="enlace || undefined" class="titulo">{{ subasta.titulo }}</component>
       <div class="precio">
-        <div class="etiqueta-precio">{{ subasta.pujas.length ? 'Puja actual' : 'Precio de salida' }}</div>
+        <div class="etiqueta-precio">{{ subasta.numeroPujas ? 'Puja actual' : 'Precio de salida' }}</div>
         <div class="monto">{{ rd(monto) }}</div>
       </div>
       <div class="datos">
-        <span>{{ subasta.pujas.length }} pujas</span>
+        <span>{{ subasta.numeroPujas }} {{ subasta.numeroPujas === 1 ? 'puja' : 'pujas' }}</span>
         <span class="tiempo" :class="{ urgente }">
-          <Clock :size="14" /> {{ textoTiempo || tiempoRestante(subasta.fechaCierre, ahora) }}
+          <Clock :size="14" /> {{ tiempo }}
         </span>
       </div>
-      <component :is="enlace ? 'RouterLink' : 'span'" :to="enlace || undefined" class="btn btn-pujar btn-sm w-100 boton">Pujar</component>
+      <component :is="enlace ? 'RouterLink' : 'span'" :to="enlace || undefined" class="btn btn-pujar btn-sm w-100 boton">{{ programada ? 'Ver' : 'Pujar' }}</component>
     </div>
   </article>
 </template>
@@ -74,18 +76,12 @@ const enlace = computed(() => (props.subasta.id ? `/subastas/${props.subasta.id}
   left: 10px;
 }
 
-.favorito {
+.sin-foto {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 32px;
-  height: 32px;
-  border: 0;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  inset: 0;
   display: grid;
   place-items: center;
+  color: var(--pj-gris-claro);
 }
 
 .cuerpo {
@@ -140,13 +136,12 @@ const enlace = computed(() => (props.subasta.id ? `/subastas/${props.subasta.id}
   color: var(--pj-peligro);
 }
 
-/* Versión de la pantalla 09: sin favorito ni botón, textos más pequeños. */
+/* Versión de la pantalla 09: sin botón, textos más pequeños. */
 @media (max-width: 991.98px) {
   .imagen {
     aspect-ratio: 173 / 150;
   }
 
-  .favorito,
   .boton {
     display: none;
   }

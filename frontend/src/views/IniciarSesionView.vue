@@ -1,18 +1,35 @@
 <script setup>
 import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { User } from 'lucide-vue-next'
+import { useRoute, useRouter } from 'vue-router'
+import { api } from '../api/cliente'
+import { iniciarSesion, rutaDeRegreso } from '../stores/sesion'
 
+const route = useRoute()
 const router = useRouter()
-const form = reactive({ correo: '', contrasena: '', recordar: false })
+const form = reactive({ correo: route.query.correo ?? '', contrasena: '', recordar: false })
 const errores = ref({})
+const error = ref('')
+const enviando = ref(false)
 
-function entrar() {
+async function entrar() {
+  error.value = ''
   const e = {}
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.correo)) e.correo = 'Escribe un correo válido, por ejemplo nombre@correo.com.'
   if (!form.contrasena) e.contrasena = 'Escribe tu contraseña.'
   errores.value = e
-  if (!Object.keys(e).length) router.push('/')
+  if (Object.keys(e).length) return
+
+  enviando.value = true
+  try {
+    const datos = await api('/api/auth/login', { metodo: 'POST', cuerpo: { correo: form.correo, contrasena: form.contrasena } })
+    iniciarSesion(datos, form.recordar)
+    router.replace(rutaDeRegreso(route.query.volver))
+  } catch (err) {
+    errores.value = err.errores
+    error.value = err.message
+  } finally {
+    enviando.value = false
+  }
 }
 </script>
 
@@ -38,12 +55,11 @@ function entrar() {
           <input id="recordar" v-model="form.recordar" type="checkbox" class="form-check-input" />
           <label for="recordar" class="form-check-label">Recordarme</label>
         </div>
-        <a href="#" class="texto-pequeno" @click.prevent>Olvidé mi contraseña</a>
+        <RouterLink :to="{ name: 'olvide-contrasena', query: form.correo ? { correo: form.correo } : {} }" class="texto-pequeno">Olvidé mi contraseña</RouterLink>
       </div>
-      <button type="submit" class="btn btn-primary btn-lg">Entrar</button>
-      <div class="separador"><span>o</span></div>
-      <button type="button" class="btn btn-light btn-lg d-flex align-items-center justify-content-center gap-2 google"><User :size="16" /> Continuar con Google</button>
-      <p class="mb-0">¿No tienes cuenta? <RouterLink to="/crear-cuenta" class="fw-medium">Crea una aquí</RouterLink></p>
+      <div v-if="error" class="alert alert-danger mb-0 py-2" role="alert">{{ error }}</div>
+      <button type="submit" class="btn btn-primary btn-lg" :disabled="enviando">{{ enviando ? 'Entrando…' : 'Entrar' }}</button>
+      <p class="mb-0">¿No tienes cuenta? <RouterLink :to="{ name: 'crear-cuenta', query: route.query }" class="fw-medium">Crea una aquí</RouterLink></p>
     </form>
   </div>
 </template>
@@ -58,26 +74,6 @@ function entrar() {
 
 .titulo {
   font-size: 28px;
-}
-
-.separador {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--pj-gris);
-  font-size: 14px;
-}
-
-.separador::before,
-.separador::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--pj-borde);
-}
-
-.google {
-  font-size: 16px;
 }
 
 @media (max-width: 575.98px) {
