@@ -21,6 +21,7 @@ builder.Services.AddScoped<PujaService>();
 builder.Services.AddScoped<CierreService>();
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<VendedorService>();
+builder.Services.AddScoped<Avisos>();
 builder.Services.AddScoped<RecuperacionService>();
 builder.Services.AddSingleton<ColaDeCorreo>();
 builder.Services.AddSingleton<IEnviadorCorreo>(sp => sp.GetRequiredService<ColaDeCorreo>());
@@ -59,13 +60,17 @@ builder.Services.AddRateLimiter(o =>
         _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions { PermitLimit = builder.Configuration.GetValue("Limites:CuentaPorMinuto", 10), Window = TimeSpan.FromMinutes(1) }));
 });
 
-// Detrás de nginx (docker-compose) la IP real del cliente llega en X-Forwarded-For.
-builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(o =>
-{
-    o.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor;
-    o.KnownIPNetworks.Clear();
-    o.KnownProxies.Clear();
-});
+// Detrás de nginx (docker-compose) la IP real del cliente llega en X-Forwarded-For. Solo se acepta si
+// la configuración lo pide (Proxy:Confiable) y viene de una red privada, que es donde está el proxy.
+var detrasDeProxy = builder.Configuration.GetValue("Proxy:Confiable", false);
+if (detrasDeProxy)
+    builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(o =>
+    {
+        o.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor;
+        o.ForwardLimit = 1;
+        foreach (var red in new[] { "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16" })
+            o.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(red));
+    });
 builder.Services.AddAuthorization();
 
 builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
@@ -109,7 +114,8 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
-app.UseForwardedHeaders();
+if (detrasDeProxy)
+    app.UseForwardedHeaders();
 app.UseStaticFiles();
 app.UseCors();
 app.UseRateLimiter();

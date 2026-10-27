@@ -12,4 +12,7 @@ public class Puja
     public decimal Monto { get; set; }
     public DateTime CreadaEn { get; set; }
     public bool Descartada { get; set; }
+
+    // La registró el sistema por una puja automática.
+    public bool Automatica { get; set; }
 }

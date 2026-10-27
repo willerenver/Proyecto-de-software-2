@@ -27,7 +27,7 @@ public record SubastaResumenResponse(
 
 public record VendedorResponse(long Id, string Nombre, string Iniciales, int Ventas);
 
-public record PujaResponse(long Id, string Postor, bool EsMia, decimal Monto, DateTime CreadaEn, bool Descartada);
+public record PujaResponse(long Id, string Postor, bool EsMia, decimal Monto, DateTime CreadaEn, bool Descartada, bool Automatica);
 
 public record SubastaDetalleResponse(
     long Id, string Titulo, string Descripcion, string Condicion, string Categoria, string? Subcategoria,
@@ -35,7 +35,7 @@ public record SubastaDetalleResponse(
     decimal PrecioSalida, decimal IncrementoMinimo, bool TienePrecioReserva, bool ReservaAlcanzada,
     decimal? PujaActual, decimal MontoMinimo, int NumeroPujas, DateTime FechaInicio, DateTime FechaCierre,
     bool ExtenderAlFinal, string Estado, bool AceptaPujas, PujaResponse? PujaGanadora, IReadOnlyList<PujaResponse> Historial,
-    DateTime? PlazoPago, bool PagoConfirmado, bool PuedeEditar);
+    DateTime? PlazoPago, bool PagoConfirmado, bool PuedeEditar, decimal? MiPujaAutomatica);
 
 public record CrearSubastaRequest(
     [Required(ErrorMessage = "Escribe un título."), StringLength(80, MinimumLength = 10, ErrorMessage = "El título debe tener entre 10 y 80 caracteres.")] string Titulo,
@@ -51,9 +51,11 @@ public record CrearSubastaRequest(
     bool PermiteRetiro = true,
     bool PermiteEnvio = false);
 
+public record PujaAutomaticaRequest([Range(typeof(decimal), "0.01", "9999999999.99", ErrorMessage = "Escribe un máximo mayor que 0.")] decimal Maximo);
+
 public record CrearPujaRequest([Range(typeof(decimal), "0.01", "9999999999.99", ErrorMessage = "Escribe un monto mayor que 0.")] decimal Monto);
 
-public record PujaRegistradaResponse(long Id, decimal Monto, decimal MontoMinimoSiguiente, DateTime FechaCierre);
+public record PujaRegistradaResponse(long Id, decimal Monto, decimal PujaActual, bool VasGanando, decimal MontoMinimoSiguiente, DateTime FechaCierre);
 
 public record MiPujaResponse(
     long SubastaId, string Titulo, string? Foto, decimal MiPuja, decimal PujaActual, decimal MontoMinimo, DateTime FechaCierre, string Situacion);

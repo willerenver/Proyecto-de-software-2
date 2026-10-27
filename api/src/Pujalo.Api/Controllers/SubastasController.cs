@@ -51,6 +51,8 @@ public class SubastasController(PujaloDbContext db, PujaService pujas, TimeProvi
         var ventas = await db.Subastas.CountAsync(x => x.Articulo.VendedorId == s.Articulo.VendedorId && x.Estado == EstadoSubasta.Finalizada, ct);
         var yo = User.Identity?.IsAuthenticated == true ? User.UsuarioId() : (long?)null;
         var actual = historial.FirstOrDefault()?.Monto;
+        var miAutomatica = yo is null ? null : await db.PujasAutomaticas.Where(a => a.SubastaId == id && a.PostorId == yo && a.Activa)
+            .Select(a => (decimal?)a.Maximo).FirstOrDefaultAsync(ct);
         var categoria = s.Articulo.Categoria;
         var v = s.Articulo.Vendedor;
 
@@ -66,7 +68,7 @@ public class SubastasController(PujaloDbContext db, PujaService pujas, TimeProvi
             historial.Where(p => p.Id == s.PujaGanadoraId).Select(p => Puja(p, yo)).FirstOrDefault(),
             historial.Select(p => Puja(p, yo)).ToList(),
             s.PlazoPago, s.PagoConfirmadoEn is not null,
-            yo == v.Id && !s.EsFinal && historial.Count == 0);
+            yo == v.Id && !s.EsFinal && historial.Count == 0, miAutomatica);
     }
 
     [Authorize]
@@ -144,8 +146,28 @@ public class SubastasController(PujaloDbContext db, PujaService pujas, TimeProvi
     {
         var puja = await pujas.RegistrarAsync(id, User.UsuarioId(), r.Monto, ct);
         var subasta = await db.Subastas.AsNoTracking().SingleAsync(s => s.Id == id, ct);
+        // Una puja automática de otro pudo responder enseguida.
+        var lider = await db.Pujas.AsNoTracking().Where(p => p.SubastaId == id).OrderByDescending(p => p.Id)
+            .Select(p => new { p.Monto, p.PostorId }).FirstAsync(ct);
         return StatusCode(StatusCodes.Status201Created,
-            new PujaRegistradaResponse(puja.Id, puja.Monto, PujaService.MontoMinimo(subasta, puja.Monto), subasta.FechaCierre));
+            new PujaRegistradaResponse(puja.Id, puja.Monto, lider.Monto, lider.PostorId == puja.PostorId,
+                PujaService.MontoMinimo(subasta, lider.Monto), subasta.FechaCierre));
+    }
+
+    [Authorize]
+    [HttpPut("{id:long}/puja-automatica")]
+    public async Task<IActionResult> ProgramarAutomatica(long id, PujaAutomaticaRequest r, CancellationToken ct)
+    {
+        await pujas.ProgramarAutomaticaAsync(id, User.UsuarioId(), r.Maximo, ct);
+        return NoContent();
+    }
+
+    [Authorize]
+    [HttpDelete("{id:long}/puja-automatica")]
+    public async Task<IActionResult> CancelarAutomatica(long id, CancellationToken ct)
+    {
+        await pujas.CancelarAutomaticaAsync(id, User.UsuarioId(), ct);
+        return NoContent();
     }
 
     internal static System.Linq.Expressions.Expression<Func<Subasta, SubastaResumenResponse>> Resumen() => s =>
@@ -158,7 +180,7 @@ public class SubastasController(PujaloDbContext db, PujaService pujas, TimeProvi
             s.Pujas.Count, s.FechaInicio, s.FechaCierre, s.Estado.ToString());
 
     private static PujaResponse Puja(Puja p, long? yo) =>
-        new(p.Id, p.PostorId == yo ? "Tú" : Ocultar(p.Postor.Correo), p.PostorId == yo, p.Monto, p.CreadaEn, p.Descartada);
+        new(p.Id, p.PostorId == yo ? "Tú" : Ocultar(p.Postor.Correo), p.PostorId == yo, p.Monto, p.CreadaEn, p.Descartada, p.Automatica);
 
     // «jesus.p@correo.com» → «j***s.p», como en el historial del diseño.
     private static string Ocultar(string correo)

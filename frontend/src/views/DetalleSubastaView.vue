@@ -30,6 +30,9 @@ const aviso = ref(null)
 const verTodas = ref(false)
 const confirmarCancelacion = ref(false)
 const confirmarRetiro = ref(false)
+const automaticaAbierta = ref(false)
+const maximo = ref(null)
+const errorAutomatica = ref('')
 
 async function cargar() {
   const id = route.params.id
@@ -116,8 +119,10 @@ async function confirmar() {
   const montoPujado = monto.value
   enviando.value = true
   try {
-    await api(`/api/subastas/${subasta.value.id}/pujas`, { metodo: 'POST', cuerpo: { monto: montoPujado } })
-    aviso.value = `Vas ganando con ${rd(montoPujado)}. Si alguien te supera, lo verás en «Mis pujas».`
+    const r = await api(`/api/subastas/${subasta.value.id}/pujas`, { metodo: 'POST', cuerpo: { monto: montoPujado } })
+    aviso.value = r.vasGanando
+      ? { titulo: 'Puja registrada', texto: `Vas ganando con ${rd(montoPujado)}. Si alguien te supera, te avisamos por correo.` }
+      : { titulo: 'Te superaron al instante', texto: `Otro postor tenía una puja automática más alta. La puja actual es ${rd(r.pujaActual)}.` }
     setTimeout(() => { aviso.value = null }, 6000)
   } catch (e) {
     error.value = e.errores.monto ?? e.message
@@ -125,6 +130,38 @@ async function confirmar() {
     enviando.value = false
     confirmando.value = false
     await cargar()
+  }
+}
+
+function abrirAutomatica() {
+  if (!sesion.token) {
+    router.push({ name: 'iniciar-sesion', query: { volver: route.fullPath } })
+    return
+  }
+  errorAutomatica.value = ''
+  maximo.value = subasta.value.miPujaAutomatica ?? minimo.value + subasta.value.incrementoMinimo * 4
+  automaticaAbierta.value = true
+}
+
+async function programarAutomatica() {
+  errorAutomatica.value = ''
+  try {
+    await api(`/api/subastas/${subasta.value.id}/puja-automatica`, { metodo: 'PUT', cuerpo: { maximo: maximo.value } })
+    automaticaAbierta.value = false
+    aviso.value = { titulo: 'Puja automática activa', texto: `Pujaremos por ti lo necesario para que vayas ganando, hasta ${rd(maximo.value)}.` }
+    setTimeout(() => { aviso.value = null }, 6000)
+    await cargar()
+  } catch (e) {
+    errorAutomatica.value = e.errores.maximo ?? e.message
+  }
+}
+
+async function cancelarAutomatica() {
+  try {
+    await api(`/api/subastas/${subasta.value.id}/puja-automatica`, { metodo: 'DELETE' })
+    await cargar()
+  } catch (e) {
+    error.value = e.message
   }
 }
 
@@ -210,6 +247,7 @@ async function cancelar() {
                     <span :class="{ 'fw-medium': p.esMia, descartada: p.descartada }">{{ p.postor }}</span>
                     <EstadoBadge v-if="i === 0 && p.esMia && !cerrada" estado="Vas ganando" />
                     <EstadoBadge v-if="p.descartada" estado="Neutra" texto="No pagó a tiempo" />
+                    <small v-if="p.automatica" class="texto-gris">automática</small>
                   </span>
                   <span class="col-monto fw-medium" :class="{ descartada: p.descartada }">{{ rd(p.monto) }}</span>
                   <span class="col-fecha texto-gris">{{ fechaRelativa(p.creadaEn, ahora) }}</span>
@@ -314,6 +352,27 @@ async function cancelar() {
               <div class="d-flex gap-2">
                 <button v-for="r in rapidas" :key="r" type="button" class="btn btn-light btn-sm flex-fill" @click="sumar(r)">+ <span class="d-none d-lg-inline">RD$ </span>{{ miles(r) }}</button>
               </div>
+              <div class="automatica">
+                <div v-if="subasta.miPujaAutomatica && !automaticaAbierta" class="d-flex align-items-center gap-2 flex-wrap">
+                  <span class="flex-grow-1 texto-14">Puja automática activa hasta <strong>{{ rd(subasta.miPujaAutomatica) }}</strong></span>
+                  <button type="button" class="btn btn-light btn-sm" @click="abrirAutomatica">Cambiar</button>
+                  <button type="button" class="btn btn-link btn-sm text-danger p-0" @click="cancelarAutomatica">Desactivar</button>
+                </div>
+                <button v-else-if="!automaticaAbierta" type="button" class="btn btn-link p-0 texto-14" @click="abrirAutomatica">Puja automática: subir por mí hasta un máximo</button>
+                <form v-else class="d-flex flex-column gap-2" @submit.prevent="programarAutomatica">
+                  <label for="maximo" class="fw-medium texto-14">Tu máximo</label>
+                  <div class="d-flex gap-2">
+                    <div class="campo-puja chico" :class="{ error: errorAutomatica }">
+                      <span>RD$</span>
+                      <input id="maximo" v-model.number="maximo" type="number" :min="minimo" :step="subasta.incrementoMinimo" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Activar</button>
+                    <button type="button" class="btn btn-light" @click="automaticaAbierta = false">Cancelar</button>
+                  </div>
+                  <div v-if="errorAutomatica" class="text-danger texto-pequeno">{{ errorAutomatica }}</div>
+                  <div v-else class="meta">Pujamos por ti solo lo necesario para que vayas ganando, sin pasar de este monto. Nadie más ve tu máximo.</div>
+                </form>
+              </div>
               <p v-if="subasta.extenderAlFinal" class="meta mb-0">Si alguien puja en los últimos 2 minutos, el cierre se extiende 2 minutos más.</p>
             </template>
 
@@ -367,7 +426,7 @@ async function cancelar() {
     </form>
 
     <ModalConfirmarPuja v-if="confirmando" :subasta="subasta" :monto="monto" :ahora="ahora" :enviando="enviando" @cancelar="confirmando = false" @confirmar="confirmar" />
-    <ToastAviso v-if="aviso" titulo="Puja registrada" :texto="aviso" @cerrar="aviso = null" />
+    <ToastAviso v-if="aviso" :titulo="aviso.titulo" :texto="aviso.texto" @cerrar="aviso = null" />
   </div>
 </template>
 
@@ -425,6 +484,18 @@ async function cancelar() {
 
 .sin-foto {
   color: var(--pj-gris-claro);
+}
+
+.automatica {
+  padding-top: 4px;
+}
+
+.campo-puja.chico {
+  height: 42px;
+}
+
+.campo-puja.chico input {
+  font-size: 16px;
 }
 
 .descartada {

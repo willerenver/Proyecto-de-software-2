@@ -7,7 +7,7 @@ namespace Pujalo.Api.Servicios;
 
 // Lo que el vendedor puede hacer con su subasta: corregirla o retirarla mientras nadie ha pujado,
 // quitarle fotos y confirmar que recibió el pago del ganador.
-public class VendedorService(PujaloDbContext db, TimeProvider reloj)
+public class VendedorService(PujaloDbContext db, TimeProvider reloj, Avisos? avisos = null)
 {
     private DateTime Ahora => reloj.GetUtcNow().UtcDateTime;
 
@@ -96,6 +96,12 @@ public class VendedorService(PujaloDbContext db, TimeProvider reloj)
             throw ReglaException.Conflicto("Venció el plazo de pago; la subasta pasa al siguiente postor.");
         s.PagoConfirmadoEn = Ahora;
         await GuardarAsync(s, ct);
+        if (avisos is not null)
+        {
+            var comprador = await db.Pujas.Where(p => p.Id == s.PujaGanadoraId).Select(p => p.Postor).SingleAsync(ct);
+            avisos.PagoConfirmado(comprador, s);
+            await avisos.EnviarAsync(ct);
+        }
     }
 
     private async Task<Subasta> DelVendedorAsync(long id, long vendedorId, CancellationToken ct)

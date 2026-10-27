@@ -424,6 +424,10 @@ namespace Pujalo.Api.Datos.Migraciones
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
+                    b.Property<bool>("Automatica")
+                        .HasColumnType("bit")
+                        .HasColumnName("automatica");
+
                     b.Property<DateTime>("CreadaEn")
                         .HasColumnType("datetime2")
                         .HasColumnName("creada_en");
@@ -452,6 +456,45 @@ namespace Pujalo.Api.Datos.Migraciones
                         .IsUnique();
 
                     b.ToTable("puja", (string)null);
+                });
+
+            modelBuilder.Entity("Pujalo.Api.Dominio.PujaAutomatica", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<bool>("Activa")
+                        .HasColumnType("bit")
+                        .HasColumnName("activa");
+
+                    b.Property<DateTime>("CreadaEn")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("creada_en");
+
+                    b.Property<decimal>("Maximo")
+                        .HasColumnType("decimal(12,2)")
+                        .HasColumnName("maximo");
+
+                    b.Property<long>("PostorId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("postor_id");
+
+                    b.Property<long>("SubastaId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("subasta_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PostorId");
+
+                    b.HasIndex("SubastaId", "PostorId")
+                        .IsUnique();
+
+                    b.ToTable("puja_automatica", (string)null);
                 });
 
             modelBuilder.Entity("Pujalo.Api.Dominio.Rol", b =>
@@ -725,6 +768,23 @@ namespace Pujalo.Api.Datos.Migraciones
                     b.Navigation("Postor");
 
                     b.Navigation("Subasta");
+                });
+
+            modelBuilder.Entity("Pujalo.Api.Dominio.PujaAutomatica", b =>
+                {
+                    b.HasOne("Pujalo.Api.Dominio.Usuario", "Postor")
+                        .WithMany()
+                        .HasForeignKey("PostorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Pujalo.Api.Dominio.Subasta", null)
+                        .WithMany()
+                        .HasForeignKey("SubastaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Postor");
                 });
 
             modelBuilder.Entity("Pujalo.Api.Dominio.Subasta", b =>

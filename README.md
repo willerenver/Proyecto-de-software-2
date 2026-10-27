@@ -15,7 +15,7 @@ Solo hace falta Docker. Levanta SQL Server, la API y el frontend:
 docker compose up --build        # http://localhost:8080
 ```
 
-La primera vez crea la base y carga los datos de demostración, con subastas en todos los estados: activas (una cierra en menos de 1 hora), programada, vendida con el plazo de pago corriendo, vendida y pagada, y sin ganador. Los datos quedan en volúmenes de Docker; `docker compose down -v` los borra y la próxima vez se siembran de nuevo con fechas frescas. La contraseña de SQL Server se cambia con la variable `SA_PASSWORD`.
+La primera vez crea la base y carga los datos de demostración, con subastas en todos los estados: activas (una cierra en menos de 1 hora), programada, vendida con el plazo de pago corriendo, vendida y pagada, y sin ganador. Los datos quedan en volúmenes de Docker; `docker compose down -v` los borra y la próxima vez se siembran de nuevo con fechas frescas. La contraseña de SQL Server se cambia con la variable `SA_PASSWORD`. Es solo para demostración local: corre en modo Development y escucha únicamente en `127.0.0.1`.
 
 ## Frontend
 
@@ -64,6 +64,8 @@ Los usuarios de demostración usan la contraseña de `Demo:Contrasena` en `appse
 
 **Correo.** «Olvidé mi contraseña» envía el enlace por SMTP con la sección `Smtp` (`Host`, `Puerto`, `Ssl`, `Usuario`, `Contrasena`, `Remitente`); guárdala también con *user-secrets*. Los correos salen en segundo plano. En Development y sin `Smtp:Host`, el correo se escribe en la consola de la API para poder probar el enlace; fuera de Development la API no arranca sin SMTP. `Web:Url` es la dirección del frontend que va en el enlace.
 
+**Avisos por correo.** Se envían cuando te superan (o superan tu puja automática), al cerrar (al ganador y al vendedor, o al vendedor si no hubo ganador), cuando la subasta pasa al siguiente postor por falta de pago y cuando el vendedor confirma el pago.
+
 **Seguridad.** Entrar, registrarse y recuperar la contraseña admiten 10 intentos por minuto por IP (`Limites:CuentaPorMinuto`). Al restablecer la contraseña o desactivar una cuenta se cierran todas sus sesiones abiertas.
 
 | Método y ruta | Qué hace | Sesión |
@@ -81,7 +83,8 @@ Los usuarios de demostración usan la contraseña de `Demo:Contrasena` en `appse
 | `POST /api/subastas/{id}/retirar` | Retira la subasta, solo sin pujas | Sí, el vendedor |
 | `DELETE /api/subastas/{id}/imagenes?ruta=` | Quita una foto (siempre queda al menos una) | Sí, el vendedor |
 | `POST /api/subastas/{id}/confirmar-pago` | El vendedor confirma que recibió el pago | Sí, el vendedor |
-| `POST /api/subastas/{id}/pujas` | Registra una puja | Sí |
+| `POST /api/subastas/{id}/pujas` | Registra una puja; responde si sigues ganando | Sí |
+| `PUT /api/subastas/{id}/puja-automatica` · `DELETE` | Programa, cambia o desactiva la puja automática | Sí |
 | `GET /api/mis-pujas` | Subastas en las que pujé y cómo voy | Sí |
 | `GET /api/mis-ventas` | Subastas que publiqué y, si se vendió, el comprador | Sí |
 | `GET /api/subastas/{id}/contacto` | Contacto de la otra parte de una subasta finalizada | Sí, el ganador o el vendedor |
@@ -97,6 +100,7 @@ Reglas que valida el servidor:
 - Una puja en los últimos 2 minutos extiende el cierre 2 minutos.
 - Dos pujas simultáneas nunca quedan ambas como la más alta.
 
+- Puja automática: el sistema puja por el postor solo lo necesario para que vaya ganando, sin pasar de su máximo. Entre dos automáticas gana el máximo mayor por el incremento mínimo sobre el otro; en empate, la que se programó primero.
 - El vendedor solo edita o retira su subasta mientras nadie haya pujado.
 - El ganador tiene 48 horas para pagar. Si el vendedor no confirma el pago en ese plazo, las pujas del ganador se descartan y gana la más alta de otro postor, con 48 horas nuevas; si no queda nadie que alcance la reserva, la subasta queda desierta.
 
@@ -105,5 +109,4 @@ Un proceso en segundo plano revisa cada 15 segundos: activa las subastas que lle
 ## Qué falta
 
 - Cobro en línea y comisión: Pújalo no procesa pagos; el ganador y el vendedor se contactan y el vendedor confirma el pago.
-- Quedaron fuera, aunque aparecen en el Figma: «Comprar ya», puja automática, preguntas al vendedor, favoritos, visitas, mensajes, notificaciones e inicio con Google.
-- Avisar por correo al ganador, al que pasa a ganar por falta de pago y al vendedor (hoy solo se ve en la aplicación).
+- Quedaron fuera, aunque aparecen en el Figma: «Comprar ya», preguntas al vendedor, favoritos, visitas, mensajes, notificaciones dentro de la aplicación e inicio con Google.

@@ -13,6 +13,7 @@ public class PujaloDbContext(DbContextOptions<PujaloDbContext> options) : DbCont
     public DbSet<ImagenArticulo> Imagenes => Set<ImagenArticulo>();
     public DbSet<Subasta> Subastas => Set<Subasta>();
     public DbSet<Puja> Pujas => Set<Puja>();
+    public DbSet<PujaAutomatica> PujasAutomaticas => Set<PujaAutomatica>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -107,6 +108,15 @@ public class PujaloDbContext(DbContextOptions<PujaloDbContext> options) : DbCont
             // Dos pujas iguales en la misma subasta son imposibles aunque falle la validación.
             e.HasIndex(x => new { x.SubastaId, x.Monto }).IsUnique();
             e.HasIndex(x => new { x.PostorId, x.SubastaId });
+            e.HasOne(x => x.Postor).WithMany().HasForeignKey(x => x.PostorId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<PujaAutomatica>(e =>
+        {
+            e.ToTable("puja_automatica");
+            e.Property(x => x.Maximo).HasColumnType("decimal(12,2)");
+            e.HasIndex(x => new { x.SubastaId, x.PostorId }).IsUnique();
+            e.HasOne<Subasta>().WithMany().HasForeignKey(x => x.SubastaId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(x => x.Postor).WithMany().HasForeignKey(x => x.PostorId).OnDelete(DeleteBehavior.Restrict);
         });
 

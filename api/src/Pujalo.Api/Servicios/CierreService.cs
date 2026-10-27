@@ -6,7 +6,7 @@ namespace Pujalo.Api.Servicios;
 
 // Activa las subastas que llegan a su inicio, cierra las que llegan a su fin (RF-11 y RF-12)
 // y pasa al siguiente postor las que el ganador no pagó en 48 horas.
-public class CierreService(PujaloDbContext db, TimeProvider reloj)
+public class CierreService(PujaloDbContext db, TimeProvider reloj, Avisos? avisos = null)
 {
     public async Task<int> ProcesarAsync(CancellationToken ct = default)
     {
@@ -19,22 +19,32 @@ public class CierreService(PujaloDbContext db, TimeProvider reloj)
         foreach (var s in porIniciar) s.Estado = EstadoSubasta.Activa;
         cambios += porIniciar.Count;
 
-        var porCerrar = await db.Subastas
+        var porCerrar = await db.Subastas.Include(s => s.Articulo).ThenInclude(a => a.Vendedor)
             .Where(s => (s.Estado == EstadoSubasta.Programada || s.Estado == EstadoSubasta.Activa) && s.FechaCierre <= ahora)
             .ToListAsync(ct);
         foreach (var s in porCerrar)
         {
-            var ganadora = await db.Pujas.Where(p => p.SubastaId == s.Id).OrderByDescending(p => p.Id).FirstOrDefaultAsync(ct);
+            var ganadora = await db.Pujas.Include(p => p.Postor).Where(p => p.SubastaId == s.Id).OrderByDescending(p => p.Id).FirstOrDefaultAsync(ct);
             var alcanzaReserva = ganadora is not null && (s.PrecioReserva is null || ganadora.Monto >= s.PrecioReserva);
             s.Estado = alcanzaReserva ? EstadoSubasta.Finalizada : EstadoSubasta.Desierta;
             s.PujaGanadoraId = alcanzaReserva ? ganadora!.Id : null;
             s.PlazoPago = alcanzaReserva ? ahora + Subasta.PlazoParaPagar : null;
             s.CerradaEn = ahora;
             s.Version++;
+            if (alcanzaReserva)
+            {
+                avisos?.Ganaste(ganadora!.Postor, s, ganadora.Monto);
+                avisos?.Vendiste(s.Articulo.Vendedor, s, ganadora!.Postor, ganadora.Monto);
+            }
+            else
+            {
+                avisos?.SinGanador(s.Articulo.Vendedor, s);
+            }
         }
         cambios += porCerrar.Count;
 
-        var sinPago = await db.Subastas.Include(s => s.PujaGanadora)
+        var sinPago = await db.Subastas.Include(s => s.PujaGanadora).ThenInclude(p => p!.Postor)
+            .Include(s => s.Articulo).ThenInclude(a => a.Vendedor)
             .Where(s => s.Estado == EstadoSubasta.Finalizada && s.PagoConfirmadoEn == null && s.PlazoPago != null && s.PlazoPago <= ahora)
             .ToListAsync(ct);
         foreach (var s in sinPago)
@@ -51,8 +61,10 @@ public class CierreService(PujaloDbContext db, TimeProvider reloj)
             {
                 // Entró una puja de último momento (y quizá extendió el cierre): se reintenta en la próxima vuelta.
                 db.ChangeTracker.Clear();
+                avisos?.Descartar();
                 return 0;
             }
+            if (avisos is not null) await avisos.EnviarAsync(ct);
         }
         return cambios;
     }
@@ -62,10 +74,11 @@ public class CierreService(PujaloDbContext db, TimeProvider reloj)
     private async Task PasarAlSiguienteAsync(Subasta s, DateTime ahora, CancellationToken ct)
     {
         var incumplido = s.PujaGanadora!.PostorId;
+        avisos?.PerdisteFaltaDePago(s.PujaGanadora.Postor, s);
         var suyas = await db.Pujas.Where(p => p.SubastaId == s.Id && p.PostorId == incumplido).ToListAsync(ct);
         foreach (var p in suyas) p.Descartada = true;
 
-        var siguiente = await db.Pujas
+        var siguiente = await db.Pujas.Include(p => p.Postor)
             .Where(p => p.SubastaId == s.Id && !p.Descartada && p.PostorId != incumplido)
             .OrderByDescending(p => p.Monto).FirstOrDefaultAsync(ct);
         var alcanzaReserva = siguiente is not null && (s.PrecioReserva is null || siguiente.Monto >= s.PrecioReserva);
@@ -75,6 +88,15 @@ public class CierreService(PujaloDbContext db, TimeProvider reloj)
         s.PlazoPago = alcanzaReserva ? ahora + Subasta.PlazoParaPagar : null;
         if (!alcanzaReserva) s.Estado = EstadoSubasta.Desierta;
         s.Version++;
+        if (alcanzaReserva)
+        {
+            avisos?.PasoATi(siguiente!.Postor, s, siguiente.Monto);
+            avisos?.Vendiste(s.Articulo.Vendedor, s, siguiente.Postor, siguiente.Monto);
+        }
+        else
+        {
+            avisos?.SinGanador(s.Articulo.Vendedor, s);
+        }
     }
 }
 
