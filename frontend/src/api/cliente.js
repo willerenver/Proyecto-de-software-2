@@ -12,7 +12,8 @@ export class ErrorApi extends Error {
   }
 }
 
-export async function api(ruta, { metodo = 'GET', cuerpo, formulario } = {}) {
+// Con conTotal devuelve { datos, total }, con el total de la cabecera X-Total de los listados paginados.
+export async function api(ruta, { metodo = 'GET', cuerpo, formulario, conTotal = false } = {}) {
   const headers = {}
   if (sesion.token) headers.Authorization = `Bearer ${sesion.token}`
   let body
@@ -45,7 +46,19 @@ export async function api(ruta, { metodo = 'GET', cuerpo, formulario } = {}) {
     }
     throw new ErrorApi(datos?.title ?? 'Ocurrió un error inesperado. Intenta de nuevo en unos minutos.', respuesta.status, errores)
   }
+  if (conTotal) return { datos, total: Number(respuesta.headers.get('X-Total') ?? datos?.length ?? 0) }
   return datos
+}
+
+// Pide las páginas 1..paginas de un listado paginado y las une sin repetir (por id). Así, al refrescar,
+// no se pierde lo que ya se cargó con «Ver más».
+export async function paginas(ruta, cuantas, porPagina = 24) {
+  const separador = ruta.includes('?') ? '&' : '?'
+  const respuestas = await Promise.all(Array.from({ length: cuantas }, (_, i) =>
+    api(`${ruta}${separador}pagina=${i + 1}&porPagina=${porPagina}`, { conTotal: true })))
+  const vistos = new Set()
+  const datos = respuestas.flatMap(r => r.datos).filter(x => !vistos.has(x.id) && vistos.add(x.id))
+  return { datos, total: respuestas[0]?.total ?? 0 }
 }
 
 // Las rutas de las fotos llegan como «/fotos/abc.jpg»; las vistas previas locales son «blob:…».

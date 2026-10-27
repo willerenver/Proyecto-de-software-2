@@ -15,10 +15,18 @@ namespace Pujalo.Api.Controllers;
 public class AdminController(PujaloDbContext db, TimeProvider reloj, INotificadorSubastas tiempoReal) : ControllerBase
 {
     [HttpGet("usuarios")]
-    public async Task<IReadOnlyList<UsuarioAdminResponse>> Usuarios(CancellationToken ct) =>
-        await db.Usuarios.AsNoTracking().OrderBy(u => u.Id)
+    public async Task<IReadOnlyList<UsuarioAdminResponse>> Usuarios(string? buscar, int pagina = 1, int porPagina = 24, CancellationToken ct = default)
+    {
+        var q = db.Usuarios.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(buscar))
+        {
+            var patron = Paginacion.PatronLike(buscar);
+            q = q.Where(u => EF.Functions.Like(u.Nombre + " " + u.Apellido, patron, "\\") || EF.Functions.Like(u.Correo, patron, "\\"));
+        }
+        return await q.OrderBy(u => u.Id)
             .Select(u => new UsuarioAdminResponse(u.Id, u.Nombre + " " + u.Apellido, u.Correo, u.Rol.Nombre, u.Activo, u.CreadoEn))
-            .ToListAsync(ct);
+            .PaginarAsync(pagina, porPagina, Response, ct);
+    }
 
     [HttpPatch("usuarios/{id:long}")]
     public async Task<IActionResult> CambiarActivo(long id, CambiarActivoRequest r, CancellationToken ct)
@@ -88,10 +96,15 @@ public class AdminController(PujaloDbContext db, TimeProvider reloj, INotificado
 
     // Todas las subastas, primero las que siguen abiertas.
     [HttpGet("subastas")]
-    public async Task<IReadOnlyList<SubastaResumenResponse>> Subastas(CancellationToken ct) =>
-        (await db.Subastas.AsNoTracking().Select(SubastasController.Resumen()).ToListAsync(ct))
-            .OrderBy(s => s.Estado is "Programada" or "Activa" ? 0 : 1).ThenBy(s => s.FechaCierre)
-            .ToList();
+    public async Task<IReadOnlyList<SubastaResumenResponse>> Subastas(string? buscar, int pagina = 1, int porPagina = 24, CancellationToken ct = default)
+    {
+        var q = db.Subastas.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(buscar))
+            q = q.Where(s => EF.Functions.Like(s.Articulo.Titulo, Paginacion.PatronLike(buscar), "\\"));
+        return await q
+            .OrderBy(s => s.Estado == EstadoSubasta.Programada || s.Estado == EstadoSubasta.Activa ? 0 : 1).ThenBy(s => s.FechaCierre).ThenBy(s => s.Id)
+            .Select(SubastasController.Resumen()).PaginarAsync(pagina, porPagina, Response, ct);
+    }
 
     // Cancela una subasta que aún no ha cerrado. Las pujas se conservan en el historial.
     [HttpPost("subastas/{id:long}/cancelar")]

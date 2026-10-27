@@ -79,7 +79,8 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
     .WithOrigins(builder.Configuration.GetSection("Cors:Origenes").Get<string[]>() ?? [])
     .AllowAnyHeader()
     .AllowAnyMethod()
-    .AllowCredentials()));
+    .AllowCredentials()
+    .WithExposedHeaders(Paginacion.CabeceraTotal)));
 
 builder.Services.AddControllers().ConfigureApiBehaviorOptions(o => o.InvalidModelStateResponseFactory = context =>
     new Microsoft.AspNetCore.Mvc.BadRequestObjectResult(new

@@ -76,7 +76,7 @@ Los usuarios de demostración usan la contraseña de `Demo:Contrasena` en `appse
 | `POST /api/auth/recuperar` · `POST /api/auth/restablecer` | Envía el enlace para cambiar la contraseña y la cambia con su código (vence en 1 hora, un solo uso) | No |
 | `GET /api/auth/yo` | Datos del usuario de la sesión | Sí |
 | `GET /api/categorias` | Categorías con sus subcategorías | No |
-| `GET /api/subastas?categoriaId=&buscar=&orden=cierre\|precio\|pujas` | Subastas abiertas | No |
+| `GET /api/subastas?categoriaId=&buscar=&orden=cierre\|precio\|pujas&pagina=&porPagina=` | Subastas abiertas, por páginas (total en la cabecera `X-Total`) | No |
 | `GET /api/subastas/{id}` | Detalle, historial y monto mínimo | No |
 | `POST /api/subastas` | Publica un artículo en subasta | Sí |
 | `POST /api/subastas/{id}/imagenes` | Sube fotos (JPG o PNG, 10 MB, máximo 10) | Sí, el vendedor |

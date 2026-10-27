@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Bike, Camera, Gamepad2, Gem, House, Monitor, Music, Smartphone, Watch } from 'lucide-vue-next'
 import SubastaCard from '../components/SubastaCard.vue'
 import SubastaMini from '../components/SubastaMini.vue'
-import { api } from '../api/cliente'
+import { paginas as pedirPaginas } from '../api/cliente'
 import { categorias, cargarCategorias, nombreCategoria } from '../stores/categorias'
 import { useAhora } from '../composables/useAhora'
 import { useSondeo } from '../composables/useSondeo'
@@ -18,7 +18,10 @@ const ordenes = { cierre: 'cierre más próximo', precio: 'precio más bajo', pu
 const route = useRoute()
 const router = useRouter()
 const ahora = useAhora(30000)
+const POR_PAGINA = 24
 const subastas = ref([])
+const total = ref(0)
+const paginas = ref(1)
 const cargando = ref(true)
 const error = ref('')
 
@@ -34,7 +37,9 @@ async function cargar() {
   if (filtro.value.categoria) q.set('categoriaId', filtro.value.categoria)
   if (filtro.value.buscar) q.set('buscar', filtro.value.buscar)
   try {
-    subastas.value = await api(`/api/subastas?${q}`)
+    const r = await pedirPaginas(`/api/subastas?${q}`, paginas.value, POR_PAGINA)
+    subastas.value = r.datos
+    total.value = r.total
     error.value = ''
   } catch (e) {
     error.value = e.message
@@ -43,7 +48,12 @@ async function cargar() {
   }
 }
 
-watch(filtro, () => { cargando.value = true; cargar() }, { immediate: true })
+watch(filtro, () => { cargando.value = true; paginas.value = 1; cargar() }, { immediate: true })
+
+function verMas() {
+  paginas.value++
+  cargar()
+}
 useListadoEnVivo(cargar)
 useSondeo(cargar, 60000)
 cargarCategorias().catch(() => {})
@@ -128,7 +138,7 @@ const pasos = [
       <div class="d-flex justify-content-between align-items-end gap-3 mb-3 flex-wrap">
         <div>
           <h2 class="fw-bold mb-0 titulo-lista">{{ tituloLista }}</h2>
-          <span class="texto-gris texto-pequeno">{{ activas.length }} {{ activas.length === 1 ? 'subasta activa' : 'subastas activas' }}</span>
+          <span class="texto-gris texto-pequeno">{{ total }} {{ total === 1 ? 'subasta activa' : 'subastas activas' }}</span>
         </div>
         <div class="d-flex align-items-center gap-3">
           <label class="d-flex align-items-center gap-2 texto-pequeno">
@@ -150,9 +160,14 @@ const pasos = [
         <p class="texto-gris mb-3">¿Tienes algo que ya no usas? Publícalo y recibe pujas.</p>
         <RouterLink to="/publicar" class="btn btn-pujar">Publicar un artículo</RouterLink>
       </div>
-      <div v-else class="grilla">
-        <SubastaCard v-for="s in activas" :key="s.id" :subasta="s" :ahora="ahora" />
-      </div>
+      <template v-else>
+        <div class="grilla">
+          <SubastaCard v-for="s in activas" :key="s.id" :subasta="s" :ahora="ahora" />
+        </div>
+        <div v-if="subastas.length < total" class="text-center mt-4">
+          <button type="button" class="btn btn-light" @click="verMas">Ver más subastas ({{ total - subastas.length }})</button>
+        </div>
+      </template>
     </section>
 
     <section v-if="!filtrando" id="como-funciona" class="panel p-4 p-lg-5 d-none d-lg-block">

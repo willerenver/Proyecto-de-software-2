@@ -16,7 +16,8 @@ public class SubastasController(PujaloDbContext db, PujaService pujas, TimeProvi
 
     // Subastas abiertas, por defecto ordenadas por hora de cierre (pantalla 01).
     [HttpGet]
-    public async Task<IReadOnlyList<SubastaResumenResponse>> Listar(int? categoriaId, string? buscar, string orden = "cierre", CancellationToken ct = default)
+    public async Task<IReadOnlyList<SubastaResumenResponse>> Listar(int? categoriaId, string? buscar, string orden = "cierre",
+        int pagina = 1, int porPagina = 24, CancellationToken ct = default)
     {
         var ahora = Ahora;
         var q = db.Subastas.AsNoTracking()
@@ -25,15 +26,16 @@ public class SubastasController(PujaloDbContext db, PujaService pujas, TimeProvi
         if (categoriaId is not null)
             q = q.Where(s => s.Articulo.CategoriaId == categoriaId || s.Articulo.Categoria.CategoriaPadreId == categoriaId);
         if (!string.IsNullOrWhiteSpace(buscar))
-            q = q.Where(s => EF.Functions.Like(s.Articulo.Titulo, $"%{buscar.Trim()}%"));
+            q = q.Where(s => EF.Functions.Like(s.Articulo.Titulo, Paginacion.PatronLike(buscar), "\\"));
 
-        var lista = await q.Select(Resumen()).ToListAsync(ct);
-        return orden switch
+        // Se ordena en la base para poder paginar; el id desempata para que las páginas no se repitan.
+        q = orden switch
         {
-            "precio" => lista.OrderBy(s => s.PujaActual ?? s.PrecioSalida).ToList(),
-            "pujas" => lista.OrderByDescending(s => s.NumeroPujas).ToList(),
-            _ => lista.OrderBy(s => s.FechaCierre).ToList(),
+            "precio" => q.OrderBy(s => s.Pujas.Max(p => (decimal?)p.Monto) ?? s.PrecioSalida).ThenBy(s => s.Id),
+            "pujas" => q.OrderByDescending(s => s.Pujas.Count).ThenBy(s => s.Id),
+            _ => q.OrderBy(s => s.FechaCierre).ThenBy(s => s.Id),
         };
+        return await q.Select(Resumen()).PaginarAsync(pagina, porPagina, Response, ct);
     }
 
     [HttpGet("{id:long}")]

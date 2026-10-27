@@ -3,7 +3,7 @@ import { computed, reactive, ref } from 'vue'
 import { Image } from 'lucide-vue-next'
 import EstadoBadge from '../components/EstadoBadge.vue'
 import MenuCuenta from '../components/MenuCuenta.vue'
-import { api, urlFoto } from '../api/cliente'
+import { api, paginas as pedirPaginas, urlFoto } from '../api/cliente'
 import { sesion } from '../stores/sesion'
 import { diaCorto, rd } from '../utils/formato'
 
@@ -15,11 +15,24 @@ const usuarios = ref([])
 const error = ref('')
 const porCancelar = ref(null)
 const categorias = ref([])
+const POR_PAGINA = 24
+const buscar = ref('')
+const totales = reactive({ subastas: 0, usuarios: 0 })
+const paginas = reactive({ subastas: 1, usuarios: 1 })
+
+// Subastas y usuarios llegan por páginas de 24; al refrescar se piden todas las que ya están en pantalla.
+async function cargarLista(cual) {
+  const q = new URLSearchParams()
+  if (buscar.value.trim()) q.set('buscar', buscar.value.trim())
+  const r = await pedirPaginas(`/api/admin/${cual}?${q}`, paginas[cual], POR_PAGINA)
+  totales[cual] = r.total
+  return r.datos
+}
 
 async function cargar() {
   try {
     ;[subastas.value, usuarios.value, categorias.value] = await Promise.all([
-      api('/api/admin/subastas'), api('/api/admin/usuarios'), api('/api/admin/categorias'),
+      cargarLista('subastas'), cargarLista('usuarios'), api('/api/admin/categorias'),
     ])
     error.value = ''
   } catch (e) {
@@ -27,6 +40,17 @@ async function cargar() {
   }
 }
 cargar()
+
+function verMas(cual) {
+  paginas[cual]++
+  cargar()
+}
+
+let esperaBusqueda = null
+function alBuscar() {
+  clearTimeout(esperaBusqueda)
+  esperaBusqueda = setTimeout(() => { paginas.subastas = paginas.usuarios = 1; cargar() }, 300)
+}
 
 async function cancelar(id) {
   try {
@@ -102,8 +126,8 @@ const abierta = s => ['Programada', 'Activa'].includes(s.estado)
 
         <section class="panel p-0 overflow-hidden">
           <ul class="nav nav-tabs px-3 pt-3">
-            <li class="nav-item"><button class="nav-link" :class="{ active: pestana === 'subastas' }" @click="pestana = 'subastas'">Subastas ({{ subastas.length }})</button></li>
-            <li class="nav-item"><button class="nav-link" :class="{ active: pestana === 'usuarios' }" @click="pestana = 'usuarios'">Usuarios ({{ usuarios.length }})</button></li>
+            <li class="nav-item"><button class="nav-link" :class="{ active: pestana === 'subastas' }" @click="pestana = 'subastas'">Subastas ({{ totales.subastas }})</button></li>
+            <li class="nav-item"><button class="nav-link" :class="{ active: pestana === 'usuarios' }" @click="pestana = 'usuarios'">Usuarios ({{ totales.usuarios }})</button></li>
             <li class="nav-item"><button class="nav-link" :class="{ active: pestana === 'categorias' }" @click="pestana = 'categorias'">Categorías ({{ categorias.length }})</button></li>
           </ul>
 
@@ -143,6 +167,10 @@ const abierta = s => ['Programada', 'Activa'].includes(s.estado)
             <small class="texto-gris">Una categoría oculta no se ofrece al publicar; las subastas que ya tiene siguen visibles.</small>
           </div>
 
+          <div v-if="pestana !== 'categorias'" class="px-3 pt-3">
+            <input v-model="buscar" type="search" maxlength="80" class="form-control" :placeholder="pestana === 'subastas' ? 'Buscar por título' : 'Buscar por nombre o correo'" aria-label="Buscar" @input="alBuscar" />
+          </div>
+
           <div v-if="pestana === 'subastas'" class="table-responsive">
             <table class="table align-middle mb-0">
               <thead>
@@ -174,6 +202,9 @@ const abierta = s => ['Programada', 'Activa'].includes(s.estado)
                 <tr v-if="!subastas.length"><td colspan="6" class="texto-gris py-4 text-center">No hay subastas.</td></tr>
               </tbody>
             </table>
+            <div v-if="subastas.length < totales.subastas" class="text-center p-3">
+              <button type="button" class="btn btn-light" @click="verMas('subastas')">Ver más ({{ totales.subastas - subastas.length }})</button>
+            </div>
           </div>
 
           <div v-else-if="pestana === 'usuarios'" class="table-responsive">
@@ -192,8 +223,12 @@ const abierta = s => ['Programada', 'Activa'].includes(s.estado)
                     <button v-if="u.id !== sesion.usuario?.id" type="button" class="btn btn-sm" :class="u.activo ? 'btn-outline-danger' : 'btn-outline-primary'" @click="cambiarActivo(u)">{{ u.activo ? 'Desactivar' : 'Activar' }}</button>
                   </td>
                 </tr>
+                <tr v-if="!usuarios.length"><td colspan="6" class="texto-gris py-4 text-center">No hay usuarios con esa búsqueda.</td></tr>
               </tbody>
             </table>
+            <div v-if="usuarios.length < totales.usuarios" class="text-center p-3">
+              <button type="button" class="btn btn-light" @click="verMas('usuarios')">Ver más ({{ totales.usuarios - usuarios.length }})</button>
+            </div>
           </div>
         </section>
       </div>
