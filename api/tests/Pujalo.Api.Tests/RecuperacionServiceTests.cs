@@ -44,6 +44,7 @@ public class RecuperacionServiceTests : IDisposable
             var guardado = await db.Usuarios.SingleAsync(x => x.Id == u.Id);
             Assert.NotEqual(PasswordVerificationResult.Failed, _hasher.VerifyHashedPassword(guardado, guardado.ContrasenaHash, "nueva1234"));
             Assert.Null(guardado.RecuperacionHash);
+            Assert.Equal(1, guardado.VersionSesion);
             await Assert.ThrowsAsync<ReglaException>(() => Servicio(db).RestablecerAsync(codigo, "otra12345"));
         }
     }

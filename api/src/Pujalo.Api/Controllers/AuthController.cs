@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Pujalo.Api.Contratos;
 using Pujalo.Api.Datos;
@@ -9,10 +10,16 @@ using Pujalo.Api.Servicios;
 
 namespace Pujalo.Api.Controllers;
 
+public static class Limites
+{
+    public const string Cuenta = "cuenta";
+}
+
 [ApiController]
 [Route("api/auth")]
 public class AuthController(PujaloDbContext db, TokenService tokens, IPasswordHasher<Usuario> hasher, RecuperacionService recuperacion, TimeProvider reloj) : ControllerBase
 {
+    [EnableRateLimiting(Limites.Cuenta)]
     [HttpPost("registro")]
     public async Task<ActionResult<SesionResponse>> Registrar(RegistroRequest r, CancellationToken ct)
     {
@@ -40,6 +47,7 @@ public class AuthController(PujaloDbContext db, TokenService tokens, IPasswordHa
         return Sesion(usuario);
     }
 
+    [EnableRateLimiting(Limites.Cuenta)]
     [HttpPost("login")]
     public async Task<ActionResult<SesionResponse>> Login(LoginRequest r, CancellationToken ct)
     {
@@ -52,6 +60,7 @@ public class AuthController(PujaloDbContext db, TokenService tokens, IPasswordHa
         return Sesion(usuario);
     }
 
+    [EnableRateLimiting(Limites.Cuenta)]
     [HttpPost("recuperar")]
     public async Task<IActionResult> Recuperar(RecuperarRequest r, CancellationToken ct)
     {
@@ -59,6 +68,7 @@ public class AuthController(PujaloDbContext db, TokenService tokens, IPasswordHa
         return NoContent();
     }
 
+    [EnableRateLimiting(Limites.Cuenta)]
     [HttpPost("restablecer")]
     public async Task<IActionResult> Restablecer(RestablecerRequest r, CancellationToken ct)
     {

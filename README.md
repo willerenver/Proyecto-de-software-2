@@ -7,6 +7,16 @@ Plataforma web de subastas en línea.
 | `frontend/` | Vue 3 + Vite + Bootstrap 5, maquetado igual al diseño de Figma | Conectado a la API |
 | `api/` | ASP.NET Core (.NET 10) + EF Core con migraciones | Funcional, con pruebas de las reglas de negocio |
 
+## Arrancar todo con Docker
+
+Solo hace falta Docker. Levanta SQL Server, la API y el frontend:
+
+```bash
+docker compose up --build        # http://localhost:8080
+```
+
+La primera vez crea la base y carga los datos de demostración, con subastas en todos los estados: activas (una cierra en menos de 1 hora), programada, vendida con el plazo de pago corriendo, vendida y pagada, y sin ganador. Los datos quedan en volúmenes de Docker; `docker compose down -v` los borra y la próxima vez se siembran de nuevo con fechas frescas. La contraseña de SQL Server se cambia con la variable `SA_PASSWORD`.
+
 ## Frontend
 
 Primero arranca la API (ver abajo) y después:
@@ -44,6 +54,7 @@ cd api/src/Pujalo.Api
 dotnet user-secrets set "ConnectionStrings:Pujalo" "Server=localhost,1433;Database=Pujalo;User Id=sa;Password=TU_CONTRASEÑA;TrustServerCertificate=True"
 dotnet run --launch-profile http -- --sembrar-demo   # la primera vez: crea la base y carga las subastas del Figma
 dotnet run --launch-profile http                     # las siguientes: http://localhost:5230
+dotnet run --launch-profile http -- --reiniciar-demo # borra la base y vuelve a sembrar con fechas frescas (solo Development)
 cd ../.. && dotnet test                              # pruebas de las reglas de negocio (no necesitan SQL Server)
 ```
 
@@ -51,7 +62,9 @@ Al arrancar aplica las migraciones pendientes (`Datos/Migraciones`). Las pruebas
 
 Los usuarios de demostración usan la contraseña de `Demo:Contrasena` en `appsettings.Development.json`: `admin@pujalo.test` (administrador), `maria.r@pujalo.test`, `luis.rosario@pujalo.test`, `ana.pena@pujalo.test`, `jesus.p@pujalo.test`, `carlo91@pujalo.test`, `a.ruiz_rd@pujalo.test`.
 
-**Correo.** «Olvidé mi contraseña» envía el enlace por SMTP con la sección `Smtp` (`Host`, `Puerto`, `Ssl`, `Usuario`, `Contrasena`, `Remitente`); guárdala también con *user-secrets*. Sin `Smtp:Host`, el correo se escribe en la consola de la API, así se puede probar sin servidor de correo. `Web:Url` es la dirección del frontend que va en el enlace.
+**Correo.** «Olvidé mi contraseña» envía el enlace por SMTP con la sección `Smtp` (`Host`, `Puerto`, `Ssl`, `Usuario`, `Contrasena`, `Remitente`); guárdala también con *user-secrets*. Los correos salen en segundo plano. En Development y sin `Smtp:Host`, el correo se escribe en la consola de la API para poder probar el enlace; fuera de Development la API no arranca sin SMTP. `Web:Url` es la dirección del frontend que va en el enlace.
+
+**Seguridad.** Entrar, registrarse y recuperar la contraseña admiten 10 intentos por minuto por IP (`Limites:CuentaPorMinuto`). Al restablecer la contraseña o desactivar una cuenta se cierran todas sus sesiones abiertas.
 
 | Método y ruta | Qué hace | Sesión |
 | --- | --- | --- |

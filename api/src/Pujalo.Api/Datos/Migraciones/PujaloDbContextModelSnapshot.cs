@@ -652,6 +652,10 @@ namespace Pujalo.Api.Datos.Migraciones
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("telefono");
 
+                    b.Property<int>("VersionSesion")
+                        .HasColumnType("int")
+                        .HasColumnName("version_sesion");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Cedula")

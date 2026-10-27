@@ -26,6 +26,7 @@ public class AdminController(PujaloDbContext db, TimeProvider reloj) : Controlle
         var usuario = await db.Usuarios.FindAsync([id], ct) ?? throw ReglaException.NoEncontrado("El usuario no existe.");
         if (usuario.Id == User.UsuarioId() && !r.Activo)
             throw new ReglaException("No puedes desactivar tu propia cuenta.");
+        if (usuario.Activo && !r.Activo) usuario.VersionSesion++;
         usuario.Activo = r.Activo;
         await db.SaveChangesAsync(ct);
         return NoContent();

@@ -8,7 +8,7 @@ using Pujalo.Api.Dominio;
 namespace Pujalo.Api.Servicios;
 
 // «Olvidé mi contraseña»: se envía un enlace con un código de un solo uso que vence en 1 hora.
-// En la base solo queda el hash del código.
+// En la base solo queda el hash del código. Al cambiarla se cierran las sesiones abiertas.
 public class RecuperacionService(PujaloDbContext db, IPasswordHasher<Usuario> hasher, IEnviadorCorreo correo, IConfiguration config, TimeProvider reloj)
 {
     public static readonly TimeSpan Vigencia = TimeSpan.FromHours(1);
@@ -42,6 +42,7 @@ public class RecuperacionService(PujaloDbContext db, IPasswordHasher<Usuario> ha
         usuario.ContrasenaHash = hasher.HashPassword(usuario, contrasena);
         usuario.RecuperacionHash = null;
         usuario.RecuperacionExpira = null;
+        usuario.VersionSesion++;
         await db.SaveChangesAsync(ct);
     }
 
