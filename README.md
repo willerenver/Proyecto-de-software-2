@@ -42,6 +42,7 @@ En desarrollo, Vite reenvía `/api` y `/fotos` a `http://localhost:5230` (`vite.
 | `/admin` | No está en el Figma: subastas, usuarios y categorías (solo administrador) |
 | `/subastas/:id/editar` | Misma pantalla de Publicar, para corregir una subasta sin pujas |
 | `/olvide-contrasena` · `/restablecer-contrasena` | No están en el Figma: recuperar la contraseña |
+| `/perfil` | No está en el Figma: datos de contacto y cambio de contraseña |
 
 La versión móvil son las mismas pantallas adaptadas al ancho del teléfono. Publicar, Mis pujas, Mis ventas y Pagar piden iniciar sesión. Las pujas, cierres y cambios llegan al instante por SignalR (`/api/tiempo-real`); si la conexión falla, cada pantalla vuelve a consultar la API cada 30 a 60 segundos.
 
@@ -85,6 +86,7 @@ Los usuarios de demostración usan la contraseña de `Demo:Contrasena` en `appse
 | `POST /api/subastas/{id}/confirmar-pago` | El vendedor confirma que recibió el pago | Sí, el vendedor |
 | `POST /api/subastas/{id}/pujas` | Registra una puja; responde si sigues ganando | Sí |
 | `PUT /api/subastas/{id}/puja-automatica` · `DELETE` | Programa, cambia o desactiva la puja automática | Sí |
+| `GET /api/perfil` · `PUT` · `POST /api/perfil/contrasena` | Ver y editar mis datos; cambiar la contraseña (pide la actual y cierra las demás sesiones) | Sí |
 | `GET /api/mis-pujas` | Subastas en las que pujé y cómo voy | Sí |
 | `GET /api/mis-ventas` | Subastas que publiqué y, si se vendió, el comprador | Sí |
 | `GET /api/subastas/{id}/contacto` | Contacto de la otra parte de una subasta finalizada | Sí, el ganador o el vendedor |

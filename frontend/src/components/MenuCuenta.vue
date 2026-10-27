@@ -25,6 +25,7 @@ function salir() {
       <RouterLink to="/mis-pujas" class="item">Mis pujas</RouterLink>
       <RouterLink to="/mis-ventas" class="item">Mis ventas</RouterLink>
       <RouterLink to="/publicar" class="item">Publicar un artículo</RouterLink>
+      <RouterLink to="/perfil" class="item">Mi perfil</RouterLink>
       <RouterLink v-if="esAdministrador()" to="/admin" class="item">Administración</RouterLink>
       <button type="button" class="item salir" @click="salir">Cerrar sesión</button>
     </div>

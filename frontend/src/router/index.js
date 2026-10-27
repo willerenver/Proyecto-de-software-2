@@ -9,6 +9,7 @@ const routes = [
   { path: '/subastas/:id/editar', name: 'editar-subasta', component: () => import('../views/PublicarView.vue'), meta: { requiereSesion: true } },
   { path: '/mis-pujas', name: 'mis-pujas', component: () => import('../views/MisPujasView.vue'), meta: { requiereSesion: true } },
   { path: '/mis-ventas', name: 'mis-ventas', component: () => import('../views/MisVentasView.vue'), meta: { requiereSesion: true } },
+  { path: '/perfil', name: 'perfil', component: () => import('../views/PerfilView.vue'), meta: { requiereSesion: true } },
   { path: '/admin', name: 'admin', component: () => import('../views/AdminView.vue'), meta: { requiereSesion: true, soloAdministrador: true } },
   { path: '/iniciar-sesion', name: 'iniciar-sesion', component: () => import('../views/IniciarSesionView.vue'), meta: { simple: true } },
   { path: '/olvide-contrasena', name: 'olvide-contrasena', component: () => import('../views/OlvideContrasenaView.vue'), meta: { simple: true } },

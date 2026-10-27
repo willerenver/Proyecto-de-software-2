@@ -93,3 +93,14 @@ public record RestablecerRequest(
 public record UsuarioAdminResponse(long Id, string Nombre, string Correo, string Rol, bool Activo, DateTime CreadoEn);
 
 public record CambiarActivoRequest(bool Activo);
+
+public record PerfilResponse(long Id, string Nombre, string Apellido, string Correo, string? Telefono, string? Cedula, int MiembroDesde);
+
+public record EditarPerfilRequest(
+    [Required(ErrorMessage = "Escribe tu nombre."), StringLength(60, ErrorMessage = "Máximo 60 caracteres.")] string Nombre,
+    [Required(ErrorMessage = "Escribe tu apellido."), StringLength(60, ErrorMessage = "Máximo 60 caracteres.")] string Apellido,
+    [Required(ErrorMessage = "Escribe tu teléfono."), RegularExpression(@"^[\d\s-]{7,20}$", ErrorMessage = "Escribe un teléfono válido, por ejemplo 809-555-0142.")] string Telefono);
+
+public record CambiarContrasenaRequest(
+    [Required(ErrorMessage = "Escribe tu contraseña actual.")] string Actual,
+    [Required(ErrorMessage = "Escribe una contraseña."), RegularExpression(@"^(?=.*\d).{8,}$", ErrorMessage = "Mínimo 8 caracteres, con al menos un número.")] string Nueva);

@@ -65,6 +65,7 @@ function salir() {
               </div>
               <RouterLink to="/mis-pujas">Mis pujas</RouterLink>
               <RouterLink to="/mis-ventas">Mis ventas</RouterLink>
+              <RouterLink to="/perfil">Mi perfil</RouterLink>
               <RouterLink v-if="esAdministrador()" to="/admin">Administración</RouterLink>
               <button type="button" class="salir" @click="salir"><LogOut :size="16" /> Cerrar sesión</button>
             </div>
