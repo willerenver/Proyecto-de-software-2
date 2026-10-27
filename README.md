@@ -12,7 +12,7 @@ Plataforma web de subastas en línea.
 Solo hace falta Docker. Levanta SQL Server, la API y el frontend:
 
 ```bash
-docker compose up --build        # http://localhost:8080
+docker compose up --build        # http://localhost:8080 · documentación de la API: http://localhost:8080/api/docs
 ```
 
 La primera vez crea la base y carga los datos de demostración, con subastas en todos los estados: activas (una cierra en menos de 1 hora), programada, vendida con el plazo de pago corriendo, vendida y pagada, y sin ganador. Los datos quedan en volúmenes de Docker; `docker compose down -v` los borra y la próxima vez se siembran de nuevo con fechas frescas. La contraseña de SQL Server se cambia con la variable `SA_PASSWORD`. Es solo para demostración local: corre en modo Development y escucha únicamente en `127.0.0.1`.
@@ -59,7 +59,7 @@ dotnet run --launch-profile http -- --reiniciar-demo # borra la base y vuelve a 
 cd ../.. && dotnet test                              # pruebas de las reglas de negocio (no necesitan SQL Server)
 ```
 
-Al arrancar aplica las migraciones pendientes (`Datos/Migraciones`). Las pruebas usan SQLite en un archivo temporal con el mismo modelo.
+Al arrancar aplica las migraciones pendientes (`Datos/Migraciones`). En desarrollo, la documentación interactiva de la API está en `/api/docs` (Scalar): se puede probar cada endpoint, y para los que piden sesión se pega el token de `POST /api/auth/login`. Las pruebas usan SQLite en un archivo temporal con el mismo modelo.
 
 Los usuarios de demostración usan la contraseña de `Demo:Contrasena` en `appsettings.Development.json`: `admin@pujalo.test` (administrador), `maria.r@pujalo.test`, `luis.rosario@pujalo.test`, `ana.pena@pujalo.test`, `jesus.p@pujalo.test`, `carlo91@pujalo.test`, `a.ruiz_rd@pujalo.test`.
 

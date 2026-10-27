@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
 using Pujalo.Api.Datos;
 using Pujalo.Api.Dominio;
 using Pujalo.Api.Controllers;
@@ -90,7 +91,23 @@ builder.Services.AddControllers().ConfigureApiBehaviorOptions(o => o.InvalidMode
         errors = context.ModelState.Where(e => e.Value?.Errors.Count > 0)
             .ToDictionary(e => e.Key, e => e.Value!.Errors.Select(x => x.ErrorMessage).ToArray()),
     }));
-builder.Services.AddOpenApi();
+// Documento OpenAPI con el esquema del token, para probar en /api/docs los endpoints que piden sesión.
+builder.Services.AddOpenApi(o => o.AddDocumentTransformer((documento, _, _) =>
+{
+    documento.Info.Title = "API de Pújalo";
+    documento.Info.Description = "Subastas en línea. Para los endpoints con sesión, entra con POST /api/auth/login y usa el token.";
+    documento.Components ??= new Microsoft.OpenApi.OpenApiComponents();
+    documento.Components.SecuritySchemes ??= new Dictionary<string, Microsoft.OpenApi.IOpenApiSecurityScheme>();
+    documento.Components.SecuritySchemes["Bearer"] = new Microsoft.OpenApi.OpenApiSecurityScheme
+    {
+        Type = Microsoft.OpenApi.SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Description = "El token que devuelve /api/auth/login.",
+    };
+    documento.Security = [new Microsoft.OpenApi.OpenApiSecurityRequirement { [new Microsoft.OpenApi.OpenApiSecuritySchemeReference("Bearer", documento)] = [] }];
+    return Task.CompletedTask;
+}));
 
 var app = builder.Build();
 
@@ -115,8 +132,15 @@ using (var scope = app.Services.CreateScope())
         await DemoSeeder.SembrarAsync(scope.ServiceProvider, app.Configuration, app.Environment, reiniciar: args.Contains("--reiniciar-demo"));
 }
 
+// Documentación de la API, solo en desarrollo: /api/docs (Scalar) y /api/openapi/v1.json.
 if (app.Environment.IsDevelopment())
-    app.MapOpenApi();
+{
+    app.MapOpenApi("/api/openapi/{documentName}.json");
+    app.MapScalarApiReference("/api/docs", o => o
+        .WithTitle("API de Pújalo")
+        .WithOpenApiRoutePattern("/api/openapi/{documentName}.json")
+        .AddPreferredSecuritySchemes("Bearer"));
+}
 
 if (detrasDeProxy)
     app.UseForwardedHeaders();
