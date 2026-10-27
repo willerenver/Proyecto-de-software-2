@@ -10,7 +10,7 @@ namespace Pujalo.Api.Controllers;
 
 [ApiController]
 [Route("api/subastas")]
-public class SubastasController(PujaloDbContext db, PujaService pujas, TimeProvider reloj, IWebHostEnvironment entorno) : ControllerBase
+public class SubastasController(PujaloDbContext db, PujaService pujas, TimeProvider reloj, IWebHostEnvironment entorno, INotificadorSubastas tiempoReal) : ControllerBase
 {
     private DateTime Ahora => reloj.GetUtcNow().UtcDateTime;
 
@@ -106,6 +106,7 @@ public class SubastasController(PujaloDbContext db, PujaService pujas, TimeProvi
         db.Subastas.Add(subasta);
         await db.SaveChangesAsync(ct);
         var creada = await db.Subastas.AsNoTracking().Where(s => s.Id == subasta.Id).Select(Resumen()).SingleAsync(ct);
+        await tiempoReal.CambioAsync([subasta.Id], ct);
         return CreatedAtAction(nameof(Detalle), new { id = subasta.Id }, creada);
     }
 

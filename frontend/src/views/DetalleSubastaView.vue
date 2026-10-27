@@ -12,6 +12,7 @@ import { esAdministrador, sesion } from '../stores/sesion'
 import { condicion, fechaConHora, fechaLarga, fechaRelativa, miles, rd } from '../utils/formato'
 import { useAhora } from '../composables/useAhora'
 import { useSondeo } from '../composables/useSondeo'
+import { useSubastaEnVivo } from '../composables/useTiempoReal'
 
 const route = useRoute()
 const router = useRouter()
@@ -57,8 +58,9 @@ watch(() => route.params.id, id => {
   cargar()
 }, { immediate: true })
 
-// Las pujas de los demás aparecen sin recargar la página.
-useSondeo(cargar, 5000)
+// Las pujas de los demás aparecen al instante (SignalR); la consulta periódica es el respaldo.
+useSubastaEnVivo(() => route.params.id, cargar)
+useSondeo(cargar, 30000)
 
 const fotos = computed(() => (subasta.value?.fotos ?? []).map(urlFoto))
 const minimo = computed(() => subasta.value?.montoMinimo ?? 0)

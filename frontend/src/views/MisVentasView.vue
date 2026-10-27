@@ -7,6 +7,7 @@ import { api, urlFoto } from '../api/cliente'
 import { diaCorto, fechaConHora, rd, tiempoRestante } from '../utils/formato'
 import { useAhora } from '../composables/useAhora'
 import { useSondeo } from '../composables/useSondeo'
+import { useListadoEnVivo } from '../composables/useTiempoReal'
 
 const ahora = useAhora(30000)
 const filas = ref([])
@@ -25,7 +26,8 @@ async function cargar() {
   }
 }
 cargar()
-useSondeo(cargar, 30000)
+useListadoEnVivo(cargar)
+useSondeo(cargar, 60000)
 
 const abiertas = computed(() => filas.value.filter(f => ['Programada', 'Activa'].includes(f.estado)))
 const vendidas = computed(() => filas.value.filter(f => f.estado === 'Finalizada'))

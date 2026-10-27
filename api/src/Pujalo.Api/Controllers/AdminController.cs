@@ -12,7 +12,7 @@ namespace Pujalo.Api.Controllers;
 [Authorize(Roles = Rol.Administrador)]
 [ApiController]
 [Route("api/admin")]
-public class AdminController(PujaloDbContext db, TimeProvider reloj) : ControllerBase
+public class AdminController(PujaloDbContext db, TimeProvider reloj, INotificadorSubastas tiempoReal) : ControllerBase
 {
     [HttpGet("usuarios")]
     public async Task<IReadOnlyList<UsuarioAdminResponse>> Usuarios(CancellationToken ct) =>
@@ -26,7 +26,12 @@ public class AdminController(PujaloDbContext db, TimeProvider reloj) : Controlle
         var usuario = await db.Usuarios.FindAsync([id], ct) ?? throw ReglaException.NoEncontrado("El usuario no existe.");
         if (usuario.Id == User.UsuarioId() && !r.Activo)
             throw new ReglaException("No puedes desactivar tu propia cuenta.");
-        if (usuario.Activo && !r.Activo) usuario.VersionSesion++;
+        if (usuario.Activo && !r.Activo)
+        {
+            usuario.VersionSesion++;
+            // Sus pujas automáticas dejan de pujar por él.
+            await db.PujasAutomaticas.Where(a => a.PostorId == id && a.Activa).ExecuteUpdateAsync(a => a.SetProperty(x => x.Activa, false), ct);
+        }
         usuario.Activo = r.Activo;
         await db.SaveChangesAsync(ct);
         return NoContent();
@@ -99,6 +104,7 @@ public class AdminController(PujaloDbContext db, TimeProvider reloj) : Controlle
         subasta.CerradaEn = reloj.GetUtcNow().UtcDateTime;
         subasta.Version++;
         await db.SaveChangesAsync(ct);
+        await tiempoReal.CambioAsync([subasta.Id], ct);
         return NoContent();
     }
 }

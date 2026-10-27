@@ -43,7 +43,7 @@ En desarrollo, Vite reenvía `/api` y `/fotos` a `http://localhost:5230` (`vite.
 | `/subastas/:id/editar` | Misma pantalla de Publicar, para corregir una subasta sin pujas |
 | `/olvide-contrasena` · `/restablecer-contrasena` | No están en el Figma: recuperar la contraseña |
 
-La versión móvil son las mismas pantallas adaptadas al ancho del teléfono. Publicar, Mis pujas, Mis ventas y Pagar piden iniciar sesión. El detalle de la subasta consulta la API cada 5 segundos para mostrar las pujas de los demás.
+La versión móvil son las mismas pantallas adaptadas al ancho del teléfono. Publicar, Mis pujas, Mis ventas y Pagar piden iniciar sesión. Las pujas, cierres y cambios llegan al instante por SignalR (`/api/tiempo-real`); si la conexión falla, cada pantalla vuelve a consultar la API cada 30 a 60 segundos.
 
 ## API
 

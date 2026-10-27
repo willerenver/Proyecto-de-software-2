@@ -110,5 +110,37 @@ public class PujaAutomaticaTests : IDisposable
         await Assert.ThrowsAsync<ReglaException>(() => AutomaticaAsync(s.Id, vendedor.Id, 9000));
     }
 
+    [Fact]
+    public async Task La_automatica_de_una_cuenta_desactivada_no_puja()
+    {
+        var vendedor = await _base.UsuarioAsync("luis@prueba.test");
+        var a = await _base.UsuarioAsync("maria@prueba.test");
+        var b = await _base.UsuarioAsync("jesus@prueba.test");
+        var s = await _base.SubastaAsync(vendedor, salida: 4000, incremento: 500);
+        await AutomaticaAsync(s.Id, a.Id, 9000);
+        await using (var db = _base.Contexto())
+            await db.Usuarios.Where(u => u.Id == a.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.Activo, false));
+
+        await PujarAsync(s.Id, b.Id, 5000);
+
+        Assert.Equal((b.Id, 5000m, false), (await PujasAsync(s.Id))[^1]);
+    }
+
+    [Fact]
+    public async Task Una_automatica_desactivada_ya_no_responde()
+    {
+        var vendedor = await _base.UsuarioAsync("luis@prueba.test");
+        var a = await _base.UsuarioAsync("maria@prueba.test");
+        var b = await _base.UsuarioAsync("jesus@prueba.test");
+        var s = await _base.SubastaAsync(vendedor, salida: 4000, incremento: 500);
+        await AutomaticaAsync(s.Id, a.Id, 9000);
+        await using (var db = _base.Contexto())
+            await new PujaService(db, _base.Reloj).CancelarAutomaticaAsync(s.Id, a.Id);
+
+        await PujarAsync(s.Id, b.Id, 5000);
+
+        Assert.Equal((b.Id, 5000m, false), (await PujasAsync(s.Id))[^1]);
+    }
+
     public void Dispose() => _base.Dispose();
 }

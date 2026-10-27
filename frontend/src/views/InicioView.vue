@@ -8,6 +8,7 @@ import { api } from '../api/cliente'
 import { categorias, cargarCategorias, nombreCategoria } from '../stores/categorias'
 import { useAhora } from '../composables/useAhora'
 import { useSondeo } from '../composables/useSondeo'
+import { useListadoEnVivo } from '../composables/useTiempoReal'
 import bannerFoto from '../assets/fotos/ps5.jpg'
 
 // Íconos por id de categoría (Datos/CatalogoCategorias.cs en la API).
@@ -43,7 +44,8 @@ async function cargar() {
 }
 
 watch(filtro, () => { cargando.value = true; cargar() }, { immediate: true })
-useSondeo(cargar, 30000)
+useListadoEnVivo(cargar)
+useSondeo(cargar, 60000)
 cargarCategorias().catch(() => {})
 
 // Las que ya vencieron desaparecen sin esperar a la próxima consulta.

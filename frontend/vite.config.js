@@ -8,7 +8,7 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     proxy: {
-      '/api': API,
+      '/api': { target: API, ws: true },
       '/fotos': API,
     },
   },

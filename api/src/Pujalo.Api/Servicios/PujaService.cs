@@ -5,7 +5,7 @@ using Pujalo.Api.Dominio;
 namespace Pujalo.Api.Servicios;
 
 // Reglas RN-01 a RN-06 del documento de requerimientos, más la puja automática.
-public class PujaService(PujaloDbContext db, TimeProvider reloj, Avisos? avisos = null)
+public class PujaService(PujaloDbContext db, TimeProvider reloj, Avisos? avisos = null, INotificadorSubastas? tiempoReal = null)
 {
     private const int MaximoDeRondas = 20;
 
@@ -60,8 +60,10 @@ public class PujaService(PujaloDbContext db, TimeProvider reloj, Avisos? avisos 
     {
         var automatica = await db.PujasAutomaticas.FirstOrDefaultAsync(a => a.SubastaId == subastaId && a.PostorId == postorId && a.Activa, ct)
             ?? throw ReglaException.NoEncontrado("No tienes una puja automática en esta subasta.");
+        var subasta = await db.Subastas.SingleAsync(s => s.Id == subastaId, ct);
         automatica.Activa = false;
-        await db.SaveChangesAsync(ct);
+        // Cambia la versión de la subasta: una puja que esté resolviendo automáticas al mismo tiempo falla y se reintenta.
+        await GuardarAsync(subasta, new Estado(), ct);
     }
 
     private async Task<(Subasta, DateTime)> AbiertaParaAsync(long subastaId, long postorId, CancellationToken ct)
@@ -114,7 +116,7 @@ public class PujaService(PujaloDbContext db, TimeProvider reloj, Avisos? avisos 
     private async Task ResponderAutomaticasAsync(Subasta subasta, Estado estado, DateTime ahora, CancellationToken ct)
     {
         var activas = await db.PujasAutomaticas.Include(a => a.Postor)
-            .Where(a => a.SubastaId == subasta.Id && a.Activa).ToListAsync(ct);
+            .Where(a => a.SubastaId == subasta.Id && a.Activa && a.Postor.Activo).ToListAsync(ct);
         // Las que se acaban de crear o cambiar en esta operación todavía no están en la base.
         foreach (var nueva in db.ChangeTracker.Entries<PujaAutomatica>().Select(e => e.Entity))
             if (nueva.SubastaId == subasta.Id && nueva.Activa && !activas.Contains(nueva)) activas.Add(nueva);
@@ -167,8 +169,9 @@ public class PujaService(PujaloDbContext db, TimeProvider reloj, Avisos? avisos 
             db.ChangeTracker.Clear();
             throw ReglaException.Conflicto("Alguien pujó al mismo tiempo. Revisa la puja actual y vuelve a intentarlo.");
         }
+        if (tiempoReal is not null) await tiempoReal.CambioAsync([subasta.Id], ct);
 
-        if (avisos is null) return;
+        if (avisos is null || estado.Monto is null) return;
         var avisados = new HashSet<long>();
         foreach (var a in estado.Agotadas.Where(a => a.PostorId != estado.LiderId))
             if (avisados.Add(a.PostorId)) avisos.SuperaronTuMaximo(a.Postor, subasta, a.Maximo, estado.Monto!.Value);

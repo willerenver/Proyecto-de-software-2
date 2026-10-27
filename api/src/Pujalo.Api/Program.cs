@@ -22,6 +22,8 @@ builder.Services.AddScoped<CierreService>();
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<VendedorService>();
 builder.Services.AddScoped<Avisos>();
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<INotificadorSubastas, NotificadorSubastas>();
 builder.Services.AddScoped<RecuperacionService>();
 builder.Services.AddSingleton<ColaDeCorreo>();
 builder.Services.AddSingleton<IEnviadorCorreo>(sp => sp.GetRequiredService<ColaDeCorreo>());
@@ -76,7 +78,8 @@ builder.Services.AddAuthorization();
 builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
     .WithOrigins(builder.Configuration.GetSection("Cors:Origenes").Get<string[]>() ?? [])
     .AllowAnyHeader()
-    .AllowAnyMethod()));
+    .AllowAnyMethod()
+    .AllowCredentials()));
 
 builder.Services.AddControllers().ConfigureApiBehaviorOptions(o => o.InvalidModelStateResponseFactory = context =>
     new Microsoft.AspNetCore.Mvc.BadRequestObjectResult(new
@@ -122,6 +125,7 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<SubastasHub>(SubastasHub.Ruta);
 
 app.Run();
 

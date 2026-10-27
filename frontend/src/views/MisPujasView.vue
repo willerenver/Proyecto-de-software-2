@@ -7,6 +7,7 @@ import { api, urlFoto } from '../api/cliente'
 import { rd, tiempoEnPalabras, tiempoRestante } from '../utils/formato'
 import { useAhora } from '../composables/useAhora'
 import { useSondeo } from '../composables/useSondeo'
+import { useListadoEnVivo } from '../composables/useTiempoReal'
 
 const ahora = useAhora(30000)
 const pestana = ref('activas')
@@ -26,7 +27,8 @@ async function cargar() {
   }
 }
 cargar()
-useSondeo(cargar, 15000)
+useListadoEnVivo(cargar)
+useSondeo(cargar, 60000)
 
 const activas = computed(() => filas.value.filter(f => ['vas_ganando', 'superado', 'cerrando'].includes(f.situacion)))
 const ganadas = computed(() => filas.value.filter(f => f.situacion === 'ganada'))

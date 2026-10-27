@@ -6,7 +6,7 @@ namespace Pujalo.Api.Servicios;
 
 // Activa las subastas que llegan a su inicio, cierra las que llegan a su fin (RF-11 y RF-12)
 // y pasa al siguiente postor las que el ganador no pagó en 48 horas.
-public class CierreService(PujaloDbContext db, TimeProvider reloj, Avisos? avisos = null)
+public class CierreService(PujaloDbContext db, TimeProvider reloj, Avisos? avisos = null, INotificadorSubastas? tiempoReal = null)
 {
     public async Task<int> ProcesarAsync(CancellationToken ct = default)
     {
@@ -65,6 +65,8 @@ public class CierreService(PujaloDbContext db, TimeProvider reloj, Avisos? aviso
                 return 0;
             }
             if (avisos is not null) await avisos.EnviarAsync(ct);
+            if (tiempoReal is not null)
+                await tiempoReal.CambioAsync(porIniciar.Concat(porCerrar).Concat(sinPago).Select(s => s.Id), ct);
         }
         return cambios;
     }
