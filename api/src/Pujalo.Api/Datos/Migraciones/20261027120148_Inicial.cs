@@ -17,11 +17,11 @@ namespace Pujalo.Api.Datos.Migraciones
                 name: "categoria",
                 columns: table => new
                 {
-                    id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    nombre = table.Column<string>(type: "TEXT", maxLength: 60, nullable: false),
-                    categoria_padre_id = table.Column<int>(type: "INTEGER", nullable: true),
-                    activa = table.Column<bool>(type: "INTEGER", nullable: false, defaultValue: true)
+                    id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    nombre = table.Column<string>(type: "nvarchar(60)", maxLength: 60, nullable: false),
+                    categoria_padre_id = table.Column<int>(type: "int", nullable: true),
+                    activa = table.Column<bool>(type: "bit", nullable: false, defaultValue: true)
                 },
                 constraints: table =>
                 {
@@ -39,10 +39,10 @@ namespace Pujalo.Api.Datos.Migraciones
                 name: "rol",
                 columns: table => new
                 {
-                    id = table.Column<short>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    nombre = table.Column<string>(type: "TEXT", maxLength: 30, nullable: false),
-                    descripcion = table.Column<string>(type: "TEXT", maxLength: 150, nullable: true)
+                    id = table.Column<short>(type: "smallint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    nombre = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
+                    descripcion = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -53,17 +53,19 @@ namespace Pujalo.Api.Datos.Migraciones
                 name: "usuario",
                 columns: table => new
                 {
-                    id = table.Column<long>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    rol_id = table.Column<short>(type: "INTEGER", nullable: false),
-                    nombre = table.Column<string>(type: "TEXT", maxLength: 60, nullable: false),
-                    apellido = table.Column<string>(type: "TEXT", maxLength: 60, nullable: false),
-                    correo = table.Column<string>(type: "TEXT", maxLength: 120, nullable: false),
-                    contrasena_hash = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
-                    telefono = table.Column<string>(type: "TEXT", maxLength: 20, nullable: true),
-                    cedula = table.Column<string>(type: "TEXT", fixedLength: true, maxLength: 11, nullable: true),
-                    activo = table.Column<bool>(type: "INTEGER", nullable: false, defaultValue: true),
-                    creado_en = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    rol_id = table.Column<short>(type: "smallint", nullable: false),
+                    nombre = table.Column<string>(type: "nvarchar(60)", maxLength: 60, nullable: false),
+                    apellido = table.Column<string>(type: "nvarchar(60)", maxLength: 60, nullable: false),
+                    correo = table.Column<string>(type: "nvarchar(120)", maxLength: 120, nullable: false),
+                    contrasena_hash = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    telefono = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    cedula = table.Column<string>(type: "nchar(11)", fixedLength: true, maxLength: 11, nullable: true),
+                    activo = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
+                    creado_en = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    recuperacion_hash = table.Column<string>(type: "nvarchar(64)", maxLength: 64, nullable: true),
+                    recuperacion_expira = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -80,16 +82,16 @@ namespace Pujalo.Api.Datos.Migraciones
                 name: "articulo",
                 columns: table => new
                 {
-                    id = table.Column<long>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    vendedor_id = table.Column<long>(type: "INTEGER", nullable: false),
-                    categoria_id = table.Column<int>(type: "INTEGER", nullable: false),
-                    titulo = table.Column<string>(type: "TEXT", maxLength: 80, nullable: false),
-                    descripcion = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: false),
-                    condicion = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
-                    permite_retiro = table.Column<bool>(type: "INTEGER", nullable: false),
-                    permite_envio = table.Column<bool>(type: "INTEGER", nullable: false),
-                    creado_en = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    vendedor_id = table.Column<long>(type: "bigint", nullable: false),
+                    categoria_id = table.Column<int>(type: "int", nullable: false),
+                    titulo = table.Column<string>(type: "nvarchar(80)", maxLength: 80, nullable: false),
+                    descripcion = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false),
+                    condicion = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    permite_retiro = table.Column<bool>(type: "bit", nullable: false),
+                    permite_envio = table.Column<bool>(type: "bit", nullable: false),
+                    creado_en = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -113,11 +115,11 @@ namespace Pujalo.Api.Datos.Migraciones
                 name: "imagen_articulo",
                 columns: table => new
                 {
-                    id = table.Column<long>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    articulo_id = table.Column<long>(type: "INTEGER", nullable: false),
-                    ruta = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
-                    orden = table.Column<short>(type: "INTEGER", nullable: false, defaultValue: (short)1)
+                    id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    articulo_id = table.Column<long>(type: "bigint", nullable: false),
+                    ruta = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    orden = table.Column<short>(type: "smallint", nullable: false, defaultValue: (short)1)
                 },
                 constraints: table =>
                 {
@@ -135,12 +137,13 @@ namespace Pujalo.Api.Datos.Migraciones
                 name: "puja",
                 columns: table => new
                 {
-                    id = table.Column<long>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    subasta_id = table.Column<long>(type: "INTEGER", nullable: false),
-                    postor_id = table.Column<long>(type: "INTEGER", nullable: false),
+                    id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    subasta_id = table.Column<long>(type: "bigint", nullable: false),
+                    postor_id = table.Column<long>(type: "bigint", nullable: false),
                     monto = table.Column<decimal>(type: "decimal(12,2)", nullable: false),
-                    creada_en = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    creada_en = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    descartada = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -157,20 +160,22 @@ namespace Pujalo.Api.Datos.Migraciones
                 name: "subasta",
                 columns: table => new
                 {
-                    id = table.Column<long>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    articulo_id = table.Column<long>(type: "INTEGER", nullable: false),
+                    id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    articulo_id = table.Column<long>(type: "bigint", nullable: false),
                     precio_salida = table.Column<decimal>(type: "decimal(12,2)", nullable: false),
                     incremento_minimo = table.Column<decimal>(type: "decimal(12,2)", nullable: false),
                     precio_reserva = table.Column<decimal>(type: "decimal(12,2)", nullable: true),
-                    fecha_inicio = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    fecha_cierre = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    extender_al_final = table.Column<bool>(type: "INTEGER", nullable: false),
-                    estado = table.Column<string>(type: "TEXT", maxLength: 12, nullable: false, defaultValue: "Programada"),
-                    puja_ganadora_id = table.Column<long>(type: "INTEGER", nullable: true),
-                    cerrada_en = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    creado_en = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    version = table.Column<int>(type: "INTEGER", nullable: false)
+                    fecha_inicio = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    fecha_cierre = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    extender_al_final = table.Column<bool>(type: "bit", nullable: false),
+                    estado = table.Column<string>(type: "nvarchar(12)", maxLength: 12, nullable: false, defaultValue: "Programada"),
+                    puja_ganadora_id = table.Column<long>(type: "bigint", nullable: true),
+                    cerrada_en = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    plazo_pago = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    pago_confirmado_en = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    creado_en = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    version = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -271,7 +276,8 @@ namespace Pujalo.Api.Datos.Migraciones
                 name: "IX_categoria_nombre_categoria_padre_id",
                 table: "categoria",
                 columns: new[] { "nombre", "categoria_padre_id" },
-                unique: true);
+                unique: true,
+                filter: "[categoria_padre_id] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_imagen_articulo_articulo_id_orden",
@@ -311,13 +317,15 @@ namespace Pujalo.Api.Datos.Migraciones
                 name: "IX_subasta_puja_ganadora_id",
                 table: "subasta",
                 column: "puja_ganadora_id",
-                unique: true);
+                unique: true,
+                filter: "[puja_ganadora_id] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_usuario_cedula",
                 table: "usuario",
                 column: "cedula",
-                unique: true);
+                unique: true,
+                filter: "[cedula] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_usuario_correo",

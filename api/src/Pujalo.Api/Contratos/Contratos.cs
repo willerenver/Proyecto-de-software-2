@@ -27,14 +27,15 @@ public record SubastaResumenResponse(
 
 public record VendedorResponse(long Id, string Nombre, string Iniciales, int Ventas);
 
-public record PujaResponse(long Id, string Postor, bool EsMia, decimal Monto, DateTime CreadaEn);
+public record PujaResponse(long Id, string Postor, bool EsMia, decimal Monto, DateTime CreadaEn, bool Descartada);
 
 public record SubastaDetalleResponse(
     long Id, string Titulo, string Descripcion, string Condicion, string Categoria, string? Subcategoria,
     IReadOnlyList<string> Fotos, VendedorResponse Vendedor, bool PermiteRetiro, bool PermiteEnvio,
     decimal PrecioSalida, decimal IncrementoMinimo, bool TienePrecioReserva, bool ReservaAlcanzada,
     decimal? PujaActual, decimal MontoMinimo, int NumeroPujas, DateTime FechaInicio, DateTime FechaCierre,
-    bool ExtenderAlFinal, string Estado, bool AceptaPujas, PujaResponse? PujaGanadora, IReadOnlyList<PujaResponse> Historial);
+    bool ExtenderAlFinal, string Estado, bool AceptaPujas, PujaResponse? PujaGanadora, IReadOnlyList<PujaResponse> Historial,
+    DateTime? PlazoPago, bool PagoConfirmado, bool PuedeEditar);
 
 public record CrearSubastaRequest(
     [Required(ErrorMessage = "Escribe un título."), StringLength(80, MinimumLength = 10, ErrorMessage = "El título debe tener entre 10 y 80 caracteres.")] string Titulo,
@@ -55,7 +56,37 @@ public record CrearPujaRequest([Range(typeof(decimal), "0.01", "9999999999.99", 
 public record PujaRegistradaResponse(long Id, decimal Monto, decimal MontoMinimoSiguiente, DateTime FechaCierre);
 
 public record MiPujaResponse(
-    long SubastaId, string Titulo, string? Foto, decimal MiPuja, decimal PujaActual, DateTime FechaCierre, string Situacion);
+    long SubastaId, string Titulo, string? Foto, decimal MiPuja, decimal PujaActual, decimal MontoMinimo, DateTime FechaCierre, string Situacion);
+
+public record ContactoResponse(string Nombre, string Correo, string? Telefono);
+
+public record MiVentaResponse(
+    long SubastaId, string Titulo, string? Foto, decimal PrecioSalida, decimal? PujaActual, int NumeroPujas,
+    DateTime FechaInicio, DateTime FechaCierre, string Estado, ContactoResponse? Ganador,
+    DateTime? PlazoPago, bool PagoConfirmado);
+
+// Lo que ve cada parte de una subasta finalizada para coordinar el pago y la entrega.
+public record ContactoSubastaResponse(string Rol, decimal Monto, ContactoResponse Contraparte, DateTime? PlazoPago, bool PagoConfirmado);
+
+// Datos para el formulario de edición; solo los ve el vendedor (incluye el precio de reserva).
+public record SubastaEdicionResponse(
+    long Id, string Titulo, string Descripcion, string Condicion, int CategoriaId, decimal PrecioSalida, decimal IncrementoMinimo,
+    decimal? PrecioReserva, DateTime FechaInicio, int DuracionDias, bool ExtenderAlFinal, bool PermiteRetiro, bool PermiteEnvio,
+    string Estado, IReadOnlyList<string> Fotos);
+
+public record CategoriaAdminResponse(int Id, string Nombre, int? CategoriaPadreId, bool Activa, int Articulos);
+
+public record GuardarCategoriaRequest(
+    [Required(ErrorMessage = "Escribe el nombre."), StringLength(60, ErrorMessage = "Máximo 60 caracteres.")] string Nombre,
+    int? CategoriaPadreId,
+    bool Activa = true);
+
+public record RecuperarRequest(
+    [Required(ErrorMessage = "Escribe tu correo."), EmailAddress(ErrorMessage = "Escribe un correo válido.")] string Correo);
+
+public record RestablecerRequest(
+    [Required(ErrorMessage = "El enlace no es válido.")] string Codigo,
+    [Required(ErrorMessage = "Escribe una contraseña."), RegularExpression(@"^(?=.*\d).{8,}$", ErrorMessage = "Mínimo 8 caracteres, con al menos un número.")] string Contrasena);
 
 public record UsuarioAdminResponse(long Id, string Nombre, string Correo, string Rol, bool Activo, DateTime CreadoEn);
 

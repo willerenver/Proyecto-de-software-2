@@ -28,6 +28,7 @@ public class MisPujasController(PujaloDbContext db, TimeProvider reloj) : Contro
                 Foto = s.Articulo.Imagenes.OrderBy(i => i.Orden).Select(i => i.Ruta).FirstOrDefault(),
                 MiPuja = s.Pujas.Where(p => p.PostorId == yo).OrderByDescending(p => p.Id).Select(p => p.Monto).First(),
                 Ultima = s.Pujas.OrderByDescending(p => p.Id).Select(p => new { p.Monto, p.PostorId }).First(),
+                s.IncrementoMinimo,
                 s.FechaCierre,
                 s.Estado,
                 GanadorId = s.PujaGanadora != null ? s.PujaGanadora.PostorId : (long?)null,
@@ -35,7 +36,7 @@ public class MisPujasController(PujaloDbContext db, TimeProvider reloj) : Contro
             .ToListAsync(ct);
 
         return filas
-            .Select(f => new MiPujaResponse(f.Id, f.Titulo, f.Foto, f.MiPuja, f.Ultima.Monto, f.FechaCierre, Situacion(f.Estado, f.FechaCierre, f.Ultima.PostorId, f.GanadorId)))
+            .Select(f => new MiPujaResponse(f.Id, f.Titulo, f.Foto, f.MiPuja, f.Ultima.Monto, f.Ultima.Monto + f.IncrementoMinimo, f.FechaCierre, Situacion(f.Estado, f.FechaCierre, f.Ultima.PostorId, f.GanadorId)))
             .OrderBy(f => f.FechaCierre)
             .ToList();
 

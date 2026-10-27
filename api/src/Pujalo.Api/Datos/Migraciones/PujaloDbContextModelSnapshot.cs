@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Pujalo.Api.Datos;
 
@@ -15,51 +16,57 @@ namespace Pujalo.Api.Datos.Migraciones
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.13");
+            modelBuilder
+                .HasAnnotation("ProductVersion", "10.0.13")
+                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+
+            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
             modelBuilder.Entity("Pujalo.Api.Dominio.Articulo", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("bigint")
                         .HasColumnName("id");
 
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
                     b.Property<int>("CategoriaId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("categoria_id");
 
                     b.Property<string>("Condicion")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("nvarchar(20)")
                         .HasColumnName("condicion");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("datetime2")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("Descripcion")
                         .IsRequired()
                         .HasMaxLength(2000)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("nvarchar(2000)")
                         .HasColumnName("descripcion");
 
                     b.Property<bool>("PermiteEnvio")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("bit")
                         .HasColumnName("permite_envio");
 
                     b.Property<bool>("PermiteRetiro")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("bit")
                         .HasColumnName("permite_retiro");
 
                     b.Property<string>("Titulo")
                         .IsRequired()
                         .HasMaxLength(80)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("nvarchar(80)")
                         .HasColumnName("titulo");
 
                     b.Property<long>("VendedorId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("bigint")
                         .HasColumnName("vendedor_id");
 
                     b.HasKey("Id");
@@ -78,23 +85,25 @@ namespace Pujalo.Api.Datos.Migraciones
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activa")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("bit")
                         .HasDefaultValue(true)
                         .HasColumnName("activa");
 
                     b.Property<int?>("CategoriaPadreId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("categoria_padre_id");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasMaxLength(60)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("nvarchar(60)")
                         .HasColumnName("nombre");
 
                     b.HasKey("Id");
@@ -102,7 +111,8 @@ namespace Pujalo.Api.Datos.Migraciones
                     b.HasIndex("CategoriaPadreId");
 
                     b.HasIndex("Nombre", "CategoriaPadreId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[categoria_padre_id] IS NOT NULL");
 
                     b.ToTable("categoria", null, t =>
                         {
@@ -373,23 +383,25 @@ namespace Pujalo.Api.Datos.Migraciones
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("bigint")
                         .HasColumnName("id");
 
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
                     b.Property<long>("ArticuloId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("bigint")
                         .HasColumnName("articulo_id");
 
                     b.Property<short>("Orden")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("smallint")
                         .HasDefaultValue((short)1)
                         .HasColumnName("orden");
 
                     b.Property<string>("Ruta")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("nvarchar(255)")
                         .HasColumnName("ruta");
 
                     b.HasKey("Id");
@@ -407,23 +419,29 @@ namespace Pujalo.Api.Datos.Migraciones
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("bigint")
                         .HasColumnName("id");
 
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
                     b.Property<DateTime>("CreadaEn")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("datetime2")
                         .HasColumnName("creada_en");
+
+                    b.Property<bool>("Descartada")
+                        .HasColumnType("bit")
+                        .HasColumnName("descartada");
 
                     b.Property<decimal>("Monto")
                         .HasColumnType("decimal(12,2)")
                         .HasColumnName("monto");
 
                     b.Property<long>("PostorId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("bigint")
                         .HasColumnName("postor_id");
 
                     b.Property<long>("SubastaId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("bigint")
                         .HasColumnName("subasta_id");
 
                     b.HasKey("Id");
@@ -440,18 +458,20 @@ namespace Pujalo.Api.Datos.Migraciones
                 {
                     b.Property<short>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("smallint")
                         .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<short>("Id"));
 
                     b.Property<string>("Descripcion")
                         .HasMaxLength(150)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("nvarchar(150)")
                         .HasColumnName("descripcion");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("nvarchar(30)")
                         .HasColumnName("nombre");
 
                     b.HasKey("Id");
@@ -480,44 +500,54 @@ namespace Pujalo.Api.Datos.Migraciones
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("bigint")
                         .HasColumnName("id");
 
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
                     b.Property<long>("ArticuloId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("bigint")
                         .HasColumnName("articulo_id");
 
                     b.Property<DateTime?>("CerradaEn")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("datetime2")
                         .HasColumnName("cerrada_en");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("datetime2")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("Estado")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(12)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("nvarchar(12)")
                         .HasDefaultValue("Programada")
                         .HasColumnName("estado");
 
                     b.Property<bool>("ExtenderAlFinal")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("bit")
                         .HasColumnName("extender_al_final");
 
                     b.Property<DateTime>("FechaCierre")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("datetime2")
                         .HasColumnName("fecha_cierre");
 
                     b.Property<DateTime>("FechaInicio")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("datetime2")
                         .HasColumnName("fecha_inicio");
 
                     b.Property<decimal>("IncrementoMinimo")
                         .HasColumnType("decimal(12,2)")
                         .HasColumnName("incremento_minimo");
+
+                    b.Property<DateTime?>("PagoConfirmadoEn")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("pago_confirmado_en");
+
+                    b.Property<DateTime?>("PlazoPago")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("plazo_pago");
 
                     b.Property<decimal?>("PrecioReserva")
                         .HasColumnType("decimal(12,2)")
@@ -528,12 +558,12 @@ namespace Pujalo.Api.Datos.Migraciones
                         .HasColumnName("precio_salida");
 
                     b.Property<long?>("PujaGanadoraId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("bigint")
                         .HasColumnName("puja_ganadora_id");
 
                     b.Property<int>("Version")
                         .IsConcurrencyToken()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("version");
 
                     b.HasKey("Id");
@@ -542,7 +572,8 @@ namespace Pujalo.Api.Datos.Migraciones
                         .IsUnique();
 
                     b.HasIndex("PujaGanadoraId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[puja_ganadora_id] IS NOT NULL");
 
                     b.HasIndex("Estado", "FechaCierre");
 
@@ -558,62 +589,74 @@ namespace Pujalo.Api.Datos.Migraciones
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("bigint")
                         .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<bool>("Activo")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("bit")
                         .HasDefaultValue(true)
                         .HasColumnName("activo");
 
                     b.Property<string>("Apellido")
                         .IsRequired()
                         .HasMaxLength(60)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("nvarchar(60)")
                         .HasColumnName("apellido");
 
                     b.Property<string>("Cedula")
                         .HasMaxLength(11)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("nchar(11)")
                         .HasColumnName("cedula")
                         .IsFixedLength();
 
                     b.Property<string>("ContrasenaHash")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("nvarchar(255)")
                         .HasColumnName("contrasena_hash");
 
                     b.Property<string>("Correo")
                         .IsRequired()
                         .HasMaxLength(120)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("nvarchar(120)")
                         .HasColumnName("correo");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("datetime2")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasMaxLength(60)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("nvarchar(60)")
                         .HasColumnName("nombre");
 
+                    b.Property<DateTime?>("RecuperacionExpira")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("recuperacion_expira");
+
+                    b.Property<string>("RecuperacionHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("recuperacion_hash");
+
                     b.Property<short>("RolId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("smallint")
                         .HasColumnName("rol_id");
 
                     b.Property<string>("Telefono")
                         .HasMaxLength(20)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("nvarchar(20)")
                         .HasColumnName("telefono");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Cedula")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[cedula] IS NOT NULL");
 
                     b.HasIndex("Correo")
                         .IsUnique();

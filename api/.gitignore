@@ -486,3 +486,7 @@ $RECYCLE.BIN/
 *.db-shm
 *.db-wal
 src/Pujalo.Api/wwwroot/fotos/
+
+# Pújalo: base local y fotos que suben los usuarios
+src/Pujalo.Api/pujalo.db*
+src/Pujalo.Api/wwwroot/fotos/

@@ -11,7 +11,7 @@ namespace Pujalo.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public class AuthController(PujaloDbContext db, TokenService tokens, IPasswordHasher<Usuario> hasher, TimeProvider reloj) : ControllerBase
+public class AuthController(PujaloDbContext db, TokenService tokens, IPasswordHasher<Usuario> hasher, RecuperacionService recuperacion, TimeProvider reloj) : ControllerBase
 {
     [HttpPost("registro")]
     public async Task<ActionResult<SesionResponse>> Registrar(RegistroRequest r, CancellationToken ct)
@@ -50,6 +50,20 @@ public class AuthController(PujaloDbContext db, TokenService tokens, IPasswordHa
         if (!usuario.Activo)
             throw ReglaException.Prohibido("Tu cuenta está desactivada. Escríbenos para revisarla.");
         return Sesion(usuario);
+    }
+
+    [HttpPost("recuperar")]
+    public async Task<IActionResult> Recuperar(RecuperarRequest r, CancellationToken ct)
+    {
+        await recuperacion.SolicitarAsync(r.Correo, ct);
+        return NoContent();
+    }
+
+    [HttpPost("restablecer")]
+    public async Task<IActionResult> Restablecer(RestablecerRequest r, CancellationToken ct)
+    {
+        await recuperacion.RestablecerAsync(r.Codigo, r.Contrasena, ct);
+        return NoContent();
     }
 
     [Authorize]

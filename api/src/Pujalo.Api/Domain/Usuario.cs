@@ -14,5 +14,9 @@ public class Usuario
     public bool Activo { get; set; } = true;
     public DateTime CreadoEn { get; set; }
 
+    // Recuperación de contraseña: se guarda el hash del código, nunca el código.
+    public string? RecuperacionHash { get; set; }
+    public DateTime? RecuperacionExpira { get; set; }
+
     public string Iniciales => $"{Nombre.FirstOrDefault()}{Apellido.FirstOrDefault()}".ToUpperInvariant();
 }

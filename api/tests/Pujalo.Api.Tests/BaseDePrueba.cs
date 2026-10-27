@@ -11,7 +11,8 @@ public class RelojFijo(DateTime ahora) : TimeProvider
     public override DateTimeOffset GetUtcNow() => new(Ahora, TimeSpan.Zero);
 }
 
-// Base SQLite en un archivo temporal, con el esquema real de las migraciones.
+// Base SQLite en un archivo temporal con el esquema del modelo (índices, restricciones y catálogos).
+// Las migraciones son de SQL Server; las pruebas no necesitan un servidor.
 public sealed class BaseDePrueba : IDisposable
 {
     private readonly string _archivo = Path.Combine(Path.GetTempPath(), $"pujalo-prueba-{Guid.NewGuid():N}.db");
@@ -22,7 +23,7 @@ public sealed class BaseDePrueba : IDisposable
     public BaseDePrueba()
     {
         using var db = Contexto();
-        db.Database.Migrate();
+        db.Database.EnsureCreated();
     }
 
     public PujaloDbContext Contexto() =>

@@ -1,6 +1,7 @@
 namespace Pujalo.Api.Dominio;
 
-// Una oferta. Una vez registrada no se modifica ni se borra.
+// Una oferta. Una vez registrada no se modifica ni se borra; solo se marca como descartada
+// cuando su postor ganó y no pagó a tiempo.
 public class Puja
 {
     public long Id { get; set; }
@@ -10,4 +11,5 @@ public class Puja
     public Usuario Postor { get; set; } = null!;
     public decimal Monto { get; set; }
     public DateTime CreadaEn { get; set; }
+    public bool Descartada { get; set; }
 }

@@ -64,7 +64,9 @@ public class SubastasController(PujaloDbContext db, PujaService pujas, TimeProvi
             actual, PujaService.MontoMinimo(s, actual), historial.Count, s.FechaInicio, s.FechaCierre,
             s.ExtenderAlFinal, s.Estado.ToString(), s.AceptaPujas(Ahora),
             historial.Where(p => p.Id == s.PujaGanadoraId).Select(p => Puja(p, yo)).FirstOrDefault(),
-            historial.Select(p => Puja(p, yo)).ToList());
+            historial.Select(p => Puja(p, yo)).ToList(),
+            s.PlazoPago, s.PagoConfirmadoEn is not null,
+            yo == v.Id && !s.EsFinal && historial.Count == 0);
     }
 
     [Authorize]
@@ -73,18 +75,9 @@ public class SubastasController(PujaloDbContext db, PujaService pujas, TimeProvi
     {
         var ahora = Ahora;
         var inicio = r.FechaInicio.ToUniversalTime();
-        if (!Condiciones.Validas.Contains(r.Condicion))
-            throw new ReglaException("Elige un estado válido para el artículo.");
-        if (!Subasta.DuracionesDias.Contains(r.DuracionDias))
-            throw new ReglaException("La duración debe ser de 1, 3, 5 o 7 días.");
+        await VendedorService.ValidarAsync(db, r, ct);
         if (inicio < ahora.AddMinutes(-1))
             throw new ReglaException("La fecha de inicio no puede estar en el pasado.");
-        if (r.PrecioReserva is not null && r.PrecioReserva < r.PrecioSalida)
-            throw new ReglaException("La reserva no puede ser menor que el precio de salida.");
-        if (!r.PermiteRetiro && !r.PermiteEnvio)
-            throw new ReglaException("Elige al menos una forma de entrega.");
-        if (!await db.Categorias.AnyAsync(c => c.Id == r.CategoriaId && c.Activa, ct))
-            throw new ReglaException("Elige una categoría válida.");
 
         var subasta = new Subasta
         {
@@ -155,7 +148,7 @@ public class SubastasController(PujaloDbContext db, PujaService pujas, TimeProvi
             new PujaRegistradaResponse(puja.Id, puja.Monto, PujaService.MontoMinimo(subasta, puja.Monto), subasta.FechaCierre));
     }
 
-    private static System.Linq.Expressions.Expression<Func<Subasta, SubastaResumenResponse>> Resumen() => s =>
+    internal static System.Linq.Expressions.Expression<Func<Subasta, SubastaResumenResponse>> Resumen() => s =>
         new SubastaResumenResponse(
             s.Id, s.Articulo.Titulo,
             s.Articulo.Imagenes.OrderBy(i => i.Orden).Select(i => i.Ruta).FirstOrDefault(),
@@ -165,7 +158,7 @@ public class SubastasController(PujaloDbContext db, PujaService pujas, TimeProvi
             s.Pujas.Count, s.FechaInicio, s.FechaCierre, s.Estado.ToString());
 
     private static PujaResponse Puja(Puja p, long? yo) =>
-        new(p.Id, p.PostorId == yo ? "Tú" : Ocultar(p.Postor.Correo), p.PostorId == yo, p.Monto, p.CreadaEn);
+        new(p.Id, p.PostorId == yo ? "Tú" : Ocultar(p.Postor.Correo), p.PostorId == yo, p.Monto, p.CreadaEn, p.Descartada);
 
     // «jesus.p@correo.com» → «j***s.p», como en el historial del diseño.
     private static string Ocultar(string correo)

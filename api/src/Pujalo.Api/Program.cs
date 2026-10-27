@@ -9,11 +9,21 @@ using Pujalo.Api.Servicios;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<PujaloDbContext>(o => o.UseSqlite(builder.Configuration.GetConnectionString("Pujalo")));
+// SQL Server. La cadena va en user-secrets o en la variable ConnectionStrings__Pujalo (ver README).
+var conexion = builder.Configuration.GetConnectionString("Pujalo");
+if (string.IsNullOrWhiteSpace(conexion))
+    throw new InvalidOperationException("Falta la cadena de conexión ConnectionStrings:Pujalo. Configúrala con dotnet user-secrets (ver README).");
+builder.Services.AddDbContext<PujaloDbContext>(o => o.UseSqlServer(conexion));
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<PujaService>();
 builder.Services.AddScoped<CierreService>();
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<VendedorService>();
+builder.Services.AddScoped<RecuperacionService>();
+if (string.IsNullOrWhiteSpace(builder.Configuration["Smtp:Host"]))
+    builder.Services.AddScoped<IEnviadorCorreo, RegistroEnviadorCorreo>();
+else
+    builder.Services.AddScoped<IEnviadorCorreo, SmtpEnviadorCorreo>();
 builder.Services.AddScoped<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
 builder.Services.AddHostedService<CierreWorker>();
 

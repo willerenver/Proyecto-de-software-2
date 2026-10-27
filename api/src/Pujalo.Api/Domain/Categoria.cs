@@ -1,4 +1,4 @@
-namespace Pujalo.Api.Domian;
+namespace Pujalo.Api.Dominio;
 
 // Admite un nivel de subcategoría («Fotografía › Cámaras de rollo»).
 public class Categoria

@@ -37,6 +37,7 @@ public class PujaloDbContext(DbContextOptions<PujaloDbContext> options) : DbCont
             e.Property(x => x.Telefono).HasMaxLength(20);
             e.Property(x => x.Cedula).HasMaxLength(11).IsFixedLength();
             e.Property(x => x.Activo).HasDefaultValue(true);
+            e.Property(x => x.RecuperacionHash).HasMaxLength(64);
             e.HasIndex(x => x.Correo).IsUnique();
             e.HasIndex(x => x.Cedula).IsUnique();
             e.HasOne(x => x.Rol).WithMany().HasForeignKey(x => x.RolId).OnDelete(DeleteBehavior.Restrict);
