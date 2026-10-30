@@ -28,6 +28,7 @@ builder.Services.AddSingleton<INotificadorSubastas, NotificadorSubastas>();
 builder.Services.AddScoped<RecuperacionService>();
 builder.Services.AddSingleton<ColaDeCorreo>();
 builder.Services.AddSingleton<IEnviadorCorreo>(sp => sp.GetRequiredService<ColaDeCorreo>());
+builder.Services.AddScoped<BuzonDeCorreo>();
 builder.Services.AddHostedService<EnvioDeCorreoWorker>();
 if (!string.IsNullOrWhiteSpace(builder.Configuration["Smtp:Host"]))
     builder.Services.AddSingleton<IServidorCorreo, SmtpServidorCorreo>();
@@ -37,6 +38,8 @@ else
     throw new InvalidOperationException("Falta configurar Smtp:Host. Fuera de Development los correos se envían por SMTP.");
 builder.Services.AddScoped<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
 builder.Services.AddHostedService<CierreWorker>();
+// /api/salud responde 200 si la API está arriba y llega a SQL Server (lo usan Docker y el monitoreo).
+builder.Services.AddHealthChecks().AddDbContextCheck<ElMejorPostorDbContext>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(o =>
 {
@@ -151,6 +154,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<SubastasHub>(SubastasHub.Ruta);
+app.MapHealthChecks("/api/salud");
 
 app.Run();
 
