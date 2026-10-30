@@ -43,6 +43,13 @@ services:
       - "127.0.0.1:8080:80"
     depends_on:
       - api
+    # Pasa por nginx hasta la API y SQL Server: si responde, la aplicación completa está en pie.
+    healthcheck:
+      test: wget -qO /dev/null http://127.0.0.1/api/salud || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
 
 volumes:

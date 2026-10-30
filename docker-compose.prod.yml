@@ -1,0 +1,29 @@
+# Producción: se suma a docker-compose.yml y reemplaza lo que allí es solo para la demostración local.
+#
+#   cp .env.example .env        # y completa los valores
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Corre en Production: sin datos de demostración, sin /api/docs, con clave JWT propia y correo por SMTP.
+# Si falta una variable obligatoria, Compose se detiene y dice cuál.
+# HTTPS: pon delante un proxy con certificado (Caddy, Traefik, el balanceador del proveedor) que reenvíe al puerto PUERTO_WEB.
+services:
+  sqlserver:
+    environment:
+      MSSQL_SA_PASSWORD: ${SA_PASSWORD:?Falta SA_PASSWORD en .env}
+
+  api:
+    command: !reset []
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__ElMejorPostor: Server=sqlserver;Database=ElMejorPostor;User Id=sa;Password=${SA_PASSWORD:?Falta SA_PASSWORD en .env};TrustServerCertificate=True
+      Jwt__Clave: ${JWT_CLAVE:?Falta JWT_CLAVE en .env}
+      Web__Url: ${WEB_URL:?Falta WEB_URL en .env}
+      Smtp__Host: ${SMTP_HOST:?Falta SMTP_HOST en .env}
+      Smtp__Puerto: ${SMTP_PUERTO:-587}
+      Smtp__Usuario: ${SMTP_USUARIO:?Falta SMTP_USUARIO en .env}
+      Smtp__Contrasena: ${SMTP_CONTRASENA:?Falta SMTP_CONTRASENA en .env}
+      Smtp__Remitente: ${SMTP_REMITENTE:-}
+
+  web:
+    ports: !override
+      - "${PUERTO_WEB:-80}:80"
