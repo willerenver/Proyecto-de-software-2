@@ -1,4 +1,4 @@
-# Pújalo — Proyecto de Software II
+# El Mejor Postor — Proyecto de Software II
 
 Plataforma web de subastas en línea.
 
@@ -6,6 +6,10 @@ Plataforma web de subastas en línea.
 | --- | --- | --- |
 | `frontend/` | Vue 3 + Vite + Bootstrap 5, maquetado igual al diseño de Figma | Conectado a la API |
 | `api/` | ASP.NET Core (.NET 10) + EF Core con migraciones | Funcional, con pruebas de las reglas de negocio |
+
+## Documentación
+
+`docs/El-Mejor-Postor-Documentacion.docx` reúne requerimientos, ciclo de vida, diagramas UML y de arquitectura, pruebas y lo que falta. Los diagramas están en `docs/diagramas/` como `.drawio` editables (app.diagrams.net) con su exportación `.png`.
 
 ## Arrancar todo con Docker
 
@@ -27,7 +31,7 @@ npm install
 npm run dev                                   # http://localhost:5173
 ```
 
-En desarrollo, Vite reenvía `/api` y `/fotos` a `http://localhost:5230` (`vite.config.js`); para otra dirección usa la variable `PUJALO_API`. Para publicar el frontend aparte de la API, compila con `VITE_API_URL=https://tu-api npm run build` y agrega ese origen a `Cors:Origenes`.
+En desarrollo, Vite reenvía `/api` y `/fotos` a `http://localhost:5230` (`vite.config.js`); para otra dirección usa la variable `ELMEJORPOSTOR_API`. Para publicar el frontend aparte de la API, compila con `VITE_API_URL=https://tu-api npm run build` y agrega ese origen a `Cors:Origenes`.
 
 | Ruta | Pantalla del Figma |
 | --- | --- |
@@ -54,15 +58,15 @@ cd frontend && npx playwright install chromium   # solo la primera vez
 cd frontend && npm run e2e                    # 16 pruebas de punta a punta contra http://localhost:8080
 ```
 
-Las pruebas de punta a punta recorren la aplicación como un usuario: crear cuenta, entrar, publicar con foto, editar y retirar, pujar, puja automática, coordinar la compra, administración y la versión móvil. Necesitan la aplicación levantada (`docker compose up`) y cambian datos; para empezar de cero: `docker compose down -v && docker compose up -d`. Otra dirección: `PUJALO_URL=http://localhost:5173 npm run e2e`. El informe queda en `frontend/playwright-report`.
+Las pruebas de punta a punta recorren la aplicación como un usuario: crear cuenta, entrar, publicar con foto, editar y retirar, pujar, puja automática, coordinar la compra, administración y la versión móvil. Necesitan la aplicación levantada (`docker compose up`) y cambian datos; para empezar de cero: `docker compose down -v && docker compose up -d`. Otra dirección: `ELMEJORPOSTOR_URL=http://localhost:5173 npm run e2e`. El informe queda en `frontend/playwright-report`.
 
 ## API
 
 Usa SQL Server. En desarrollo sirve el contenedor de Docker (`mcr.microsoft.com/mssql/server:2022-latest`, puerto 1433). La cadena de conexión no va en el repositorio: cada uno la guarda con *user-secrets*.
 
 ```bash
-cd api/src/Pujalo.Api
-dotnet user-secrets set "ConnectionStrings:Pujalo" "Server=localhost,1433;Database=Pujalo;User Id=sa;Password=TU_CONTRASEÑA;TrustServerCertificate=True"
+cd api/src/ElMejorPostor.Api
+dotnet user-secrets set "ConnectionStrings:ElMejorPostor" "Server=localhost,1433;Database=ElMejorPostor;User Id=sa;Password=TU_CONTRASEÑA;TrustServerCertificate=True"
 dotnet run --launch-profile http -- --sembrar-demo   # la primera vez: crea la base y carga las subastas del Figma
 dotnet run --launch-profile http                     # las siguientes: http://localhost:5230
 dotnet run --launch-profile http -- --reiniciar-demo # borra la base y vuelve a sembrar con fechas frescas (solo Development)
@@ -71,7 +75,7 @@ cd ../.. && dotnet test                              # pruebas de las reglas de 
 
 Al arrancar aplica las migraciones pendientes (`Datos/Migraciones`). En desarrollo, la documentación interactiva de la API está en `/api/docs` (Scalar): se puede probar cada endpoint, y para los que piden sesión se pega el token de `POST /api/auth/login`. Las pruebas usan SQLite en un archivo temporal con el mismo modelo.
 
-Los usuarios de demostración usan la contraseña de `Demo:Contrasena` en `appsettings.Development.json`: `admin@pujalo.test` (administrador), `maria.r@pujalo.test`, `luis.rosario@pujalo.test`, `ana.pena@pujalo.test`, `jesus.p@pujalo.test`, `carlo91@pujalo.test`, `a.ruiz_rd@pujalo.test`.
+Los usuarios de demostración usan la contraseña de `Demo:Contrasena` en `appsettings.Development.json`: `admin@elmejorpostor.test` (administrador), `maria.r@elmejorpostor.test`, `luis.rosario@elmejorpostor.test`, `ana.pena@elmejorpostor.test`, `jesus.p@elmejorpostor.test`, `carlo91@elmejorpostor.test`, `a.ruiz_rd@elmejorpostor.test`.
 
 **Correo.** «Olvidé mi contraseña» envía el enlace por SMTP con la sección `Smtp` (`Host`, `Puerto`, `Ssl`, `Usuario`, `Contrasena`, `Remitente`); guárdala también con *user-secrets*. Los correos salen en segundo plano. En Development y sin `Smtp:Host`, el correo se escribe en la consola de la API para poder probar el enlace; fuera de Development la API no arranca sin SMTP. `Web:Url` es la dirección del frontend que va en el enlace.
 
@@ -120,5 +124,5 @@ Un proceso en segundo plano revisa cada 15 segundos: activa las subastas que lle
 
 ## Qué falta
 
-- Cobro en línea y comisión: Pújalo no procesa pagos; el ganador y el vendedor se contactan y el vendedor confirma el pago.
+- Cobro en línea y comisión: El Mejor Postor no procesa pagos; el ganador y el vendedor se contactan y el vendedor confirma el pago.
 - Quedaron fuera, aunque aparecen en el Figma: «Comprar ya», preguntas al vendedor, favoritos, visitas, mensajes, notificaciones dentro de la aplicación e inicio con Google.
