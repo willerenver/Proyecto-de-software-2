@@ -14,6 +14,7 @@ public class ElMejorPostorDbContext(DbContextOptions<ElMejorPostorDbContext> opt
     public DbSet<Subasta> Subastas => Set<Subasta>();
     public DbSet<Puja> Pujas => Set<Puja>();
     public DbSet<PujaAutomatica> PujasAutomaticas => Set<PujaAutomatica>();
+    public DbSet<CorreoPendiente> CorreosPendientes => Set<CorreoPendiente>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -118,6 +119,15 @@ public class ElMejorPostorDbContext(DbContextOptions<ElMejorPostorDbContext> opt
             e.HasIndex(x => new { x.SubastaId, x.PostorId }).IsUnique();
             e.HasOne<Subasta>().WithMany().HasForeignKey(x => x.SubastaId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(x => x.Postor).WithMany().HasForeignKey(x => x.PostorId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<CorreoPendiente>(e =>
+        {
+            e.ToTable("correo_pendiente");
+            e.Property(x => x.Para).HasMaxLength(254).IsRequired();
+            e.Property(x => x.Asunto).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Texto).IsRequired();
+            e.HasIndex(x => x.ProximoIntento);
         });
 
         // Columnas en snake_case, como en el diccionario de datos (categoria_padre_id, fecha_cierre…).
