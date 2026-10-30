@@ -19,7 +19,16 @@ Solo hace falta Docker. Levanta SQL Server, la API y el frontend:
 docker compose up --build        # http://localhost:8080 · documentación de la API: http://localhost:8080/api/docs
 ```
 
-La primera vez crea la base y carga los datos de demostración, con subastas en todos los estados: activas (una cierra en menos de 1 hora), programada, vendida con el plazo de pago corriendo, vendida y pagada, y sin ganador. Los datos quedan en volúmenes de Docker; `docker compose down -v` los borra y la próxima vez se siembran de nuevo con fechas frescas. La contraseña de SQL Server se cambia con la variable `SA_PASSWORD`. Es solo para demostración local: corre en modo Development y escucha únicamente en `127.0.0.1`.
+La primera vez crea la base y carga los datos de demostración, con subastas en todos los estados: activas (una cierra en menos de 1 hora), programada, vendida con el plazo de pago corriendo, vendida y pagada, y sin ganador. Los datos quedan en volúmenes de Docker; `docker compose down -v` los borra y la próxima vez se siembran de nuevo con fechas frescas. La contraseña de SQL Server se cambia con la variable `SA_PASSWORD`. Es solo para demostración local: corre en modo Development y escucha únicamente en `127.0.0.1`. `GET /api/salud` responde 200 cuando la API llega a SQL Server; Docker lo usa para marcar el contenedor `web` como *healthy*.
+
+## Producción
+
+```bash
+cp .env.example .env          # completa SA_PASSWORD, JWT_CLAVE, WEB_URL y SMTP_*
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+`docker-compose.prod.yml` corre en Production: sin datos de demostración ni `/api/docs`, con clave JWT propia y correo por SMTP. Si falta una variable obligatoria, Compose se detiene y dice cuál. El HTTPS lo pone un proxy con certificado delante del puerto `PUERTO_WEB` (Caddy, Traefik o el balanceador del proveedor).
 
 ## Frontend
 
@@ -47,18 +56,21 @@ En desarrollo, Vite reenvía `/api` y `/fotos` a `http://localhost:5230` (`vite.
 | `/subastas/:id/editar` | Misma pantalla de Publicar, para corregir una subasta sin pujas |
 | `/olvide-contrasena` · `/restablecer-contrasena` | No están en el Figma: recuperar la contraseña |
 | `/perfil` | No está en el Figma: datos de contacto y cambio de contraseña |
+| `/ayuda` | No está en el Figma: cómo pujar, reglas, fotos, pago y entrega, datos personales; la enlazan el pie y el encabezado |
 
 La versión móvil son las mismas pantallas adaptadas al ancho del teléfono. Publicar, Mis pujas, Mis ventas y Pagar piden iniciar sesión. Las pujas, cierres y cambios llegan al instante por SignalR (`/api/tiempo-real`); si la conexión falla, cada pantalla vuelve a consultar la API cada 30 a 60 segundos.
 
 ## Pruebas
 
 ```bash
-cd api && dotnet test                         # 48 pruebas de las reglas de negocio (no necesitan SQL Server)
+cd api && dotnet test                         # 53 pruebas de las reglas de negocio (no necesitan SQL Server)
 cd frontend && npx playwright install chromium   # solo la primera vez
-cd frontend && npm run e2e                    # 16 pruebas de punta a punta contra http://localhost:8080
+cd frontend && npm run e2e                    # 17 pruebas de punta a punta contra http://localhost:8080
 ```
 
 Las pruebas de punta a punta recorren la aplicación como un usuario: crear cuenta, entrar, publicar con foto, editar y retirar, pujar, puja automática, coordinar la compra, administración y la versión móvil. Necesitan la aplicación levantada (`docker compose up`) y cambian datos; para empezar de cero: `docker compose down -v && docker compose up -d`. Otra dirección: `ELMEJORPOSTOR_URL=http://localhost:5173 npm run e2e`. El informe queda en `frontend/playwright-report`.
+
+GitHub Actions (`.github/workflows/ci.yml`) corre todo esto en cada push y pull request: las pruebas de la API, una revisión de paquetes con vulnerabilidades conocidas, la compilación del frontend y las pruebas de punta a punta sobre `docker compose`.
 
 ## API
 
@@ -77,7 +89,7 @@ Al arrancar aplica las migraciones pendientes (`Datos/Migraciones`). En desarrol
 
 Los usuarios de demostración usan la contraseña de `Demo:Contrasena` en `appsettings.Development.json`: `admin@elmejorpostor.test` (administrador), `maria.r@elmejorpostor.test`, `luis.rosario@elmejorpostor.test`, `ana.pena@elmejorpostor.test`, `jesus.p@elmejorpostor.test`, `carlo91@elmejorpostor.test`, `a.ruiz_rd@elmejorpostor.test`.
 
-**Correo.** «Olvidé mi contraseña» envía el enlace por SMTP con la sección `Smtp` (`Host`, `Puerto`, `Ssl`, `Usuario`, `Contrasena`, `Remitente`); guárdala también con *user-secrets*. Los correos salen en segundo plano. En Development y sin `Smtp:Host`, el correo se escribe en la consola de la API para poder probar el enlace; fuera de Development la API no arranca sin SMTP. `Web:Url` es la dirección del frontend que va en el enlace.
+**Correo.** «Olvidé mi contraseña» envía el enlace por SMTP con la sección `Smtp` (`Host`, `Puerto`, `Ssl`, `Usuario`, `Contrasena`, `Remitente`); guárdala también con *user-secrets*. Los correos salen en segundo plano y quedan guardados en la tabla `correo_pendiente` hasta que se entregan: si el SMTP falla o la API se reinicia, se reintentan (1, 2, 4… minutos, hasta una hora; se descartan tras 8 intentos). En Development y sin `Smtp:Host`, el correo se escribe en la consola de la API para poder probar el enlace; fuera de Development la API no arranca sin SMTP. `Web:Url` es la dirección del frontend que va en el enlace.
 
 **Avisos por correo.** Se envían cuando te superan (o superan tu puja automática), al cerrar (al ganador y al vendedor, o al vendedor si no hubo ganador), cuando la subasta pasa al siguiente postor por falta de pago y cuando el vendedor confirma el pago.
 
@@ -89,6 +101,7 @@ Los usuarios de demostración usan la contraseña de `Demo:Contrasena` en `appse
 | `POST /api/auth/login` | Inicia sesión | No |
 | `POST /api/auth/recuperar` · `POST /api/auth/restablecer` | Envía el enlace para cambiar la contraseña y la cambia con su código (vence en 1 hora, un solo uso) | No |
 | `GET /api/auth/yo` | Datos del usuario de la sesión | Sí |
+| `GET /api/salud` | 200 si la API está arriba y llega a SQL Server | No |
 | `GET /api/categorias` | Categorías con sus subcategorías | No |
 | `GET /api/subastas?categoriaId=&buscar=&orden=cierre\|precio\|pujas&pagina=&porPagina=` | Subastas abiertas, por páginas (total en la cabecera `X-Total`) | No |
 | `GET /api/subastas/{id}` | Detalle, historial y monto mínimo | No |
@@ -112,6 +125,7 @@ Los usuarios de demostración usan la contraseña de `Demo:Contrasena` en `appse
 Reglas que valida el servidor:
 - La primera puja es igual o mayor que el precio de salida; las siguientes, la actual más el incremento mínimo.
 - El vendedor no puja en su subasta.
+- Ningún monto (precio de salida, incremento, reserva, puja o máximo automático) pasa de RD$ 999,999,999.99.
 - No se puja antes del inicio ni después del cierre.
 - Una puja en los últimos 2 minutos extiende el cierre 2 minutos.
 - Dos pujas simultáneas nunca quedan ambas como la más alta.
@@ -119,6 +133,7 @@ Reglas que valida el servidor:
 - Puja automática: el sistema puja por el postor solo lo necesario para que vaya ganando, sin pasar de su máximo. Entre dos automáticas gana el máximo mayor por el incremento mínimo sobre el otro; en empate, la que se programó primero.
 - El vendedor solo edita o retira su subasta mientras nadie haya pujado.
 - El ganador tiene 48 horas para pagar. Si el vendedor no confirma el pago en ese plazo, las pujas del ganador se descartan y gana la más alta de otro postor, con 48 horas nuevas; si no queda nadie que alcance la reserva, la subasta queda desierta.
+- Las pujas de una cuenta desactivada no cuentan para ganar: al cerrar o al pasar al siguiente se descartan.
 
 Un proceso en segundo plano revisa cada 15 segundos: activa las subastas que llegan a su inicio, cierra las que vencen y aplica el plazo de pago. Al cerrar, gana la puja más alta; si no hubo pujas o no se alcanzó la reserva, la subasta queda desierta.
 
