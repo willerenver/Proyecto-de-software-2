@@ -2,9 +2,30 @@
 import LogoElMejorPostor from '../LogoElMejorPostor.vue'
 
 const columnas = [
-  { titulo: 'Comprar', enlaces: ['Cómo pujar', 'Subastas que terminan hoy', 'Categorías'] },
-  { titulo: 'Vender', enlaces: ['Publicar un artículo', 'Comisiones', 'Consejos para tus fotos'] },
-  { titulo: 'Ayuda', enlaces: ['Preguntas frecuentes', 'Reglas de las subastas', 'Contacto'] },
+  {
+    titulo: 'Comprar',
+    enlaces: [
+      { texto: 'Subastas abiertas', a: '/' },
+      { texto: 'Cómo pujar', a: '/ayuda#pujar' },
+      { texto: 'Mis pujas', a: '/mis-pujas' },
+    ],
+  },
+  {
+    titulo: 'Vender',
+    enlaces: [
+      { texto: 'Publicar un artículo', a: '/publicar' },
+      { texto: 'Mis ventas', a: '/mis-ventas' },
+      { texto: 'Consejos para tus fotos', a: '/ayuda#vender' },
+    ],
+  },
+  {
+    titulo: 'Ayuda',
+    enlaces: [
+      { texto: 'Reglas de las subastas', a: '/ayuda#reglas' },
+      { texto: 'Pago y entrega', a: '/ayuda#pago' },
+      { texto: 'Todas las preguntas', a: '/ayuda' },
+    ],
+  },
 ]
 </script>
 
@@ -18,12 +39,12 @@ const columnas = [
         </div>
         <div v-for="c in columnas" :key="c.titulo" class="d-flex flex-column gap-2">
           <strong class="text-white">{{ c.titulo }}</strong>
-          <a v-for="e in c.enlaces" :key="e" href="#" @click.prevent>{{ e }}</a>
+          <RouterLink v-for="e in c.enlaces" :key="e.a" :to="e.a">{{ e.texto }}</RouterLink>
         </div>
       </div>
       <div class="legal d-flex justify-content-between pt-4">
         <span>© 2026 El Mejor Postor · Proyecto universitario</span>
-        <span>Términos · Privacidad</span>
+        <RouterLink to="/ayuda#privacidad">Privacidad</RouterLink>
       </div>
     </div>
   </footer>

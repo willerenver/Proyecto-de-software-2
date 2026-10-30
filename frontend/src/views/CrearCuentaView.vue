@@ -51,7 +51,7 @@ async function crear() {
     <form class="panel tarjeta d-flex flex-column gap-3" novalidate @submit.prevent="crear">
       <div>
         <h1 class="fw-bold mb-1 titulo">Crea tu cuenta</h1>
-        <p class="texto-gris mb-0">Con una cuenta puedes pujar, vender y guardar favoritos.</p>
+        <p class="texto-gris mb-0">Con una cuenta puedes pujar y vender.</p>
       </div>
       <div class="row g-3">
         <div class="col-sm">

@@ -6,7 +6,7 @@ import LogoElMejorPostor from '../LogoElMejorPostor.vue'
   <header class="bg-white border-bottom">
     <div class="contenedor d-flex justify-content-between align-items-center py-3">
       <LogoElMejorPostor />
-      <a href="#" @click.prevent>Ayuda</a>
+      <RouterLink to="/ayuda">Ayuda</RouterLink>
     </div>
   </header>
 </template>

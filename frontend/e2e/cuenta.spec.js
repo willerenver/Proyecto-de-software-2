@@ -38,3 +38,15 @@ test('las pantallas privadas piden entrar y luego regresan', async ({ page }) =>
   await page.goto('/mis-pujas')
   await expect(page).toHaveURL(/iniciar-sesion\?volver=(%2F|\/)mis-pujas/)
 })
+
+test('la ayuda se abre desde el pie y el encabezado y lleva a cada sección', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('contentinfo').getByRole('link', { name: 'Reglas de las subastas' }).click()
+  await expect(page).toHaveURL('/ayuda#reglas')
+  await expect(page.getByRole('heading', { name: 'Reglas de las subastas' })).toBeInViewport()
+
+  await page.goto('/iniciar-sesion')
+  await page.getByRole('banner').getByRole('link', { name: 'Ayuda' }).click()
+  await expect(page).toHaveURL('/ayuda')
+  await expect(page.getByRole('heading', { name: 'Pago y entrega' })).toBeVisible()
+})

@@ -15,6 +15,7 @@ const routes = [
   { path: '/olvide-contrasena', name: 'olvide-contrasena', component: () => import('../views/OlvideContrasenaView.vue'), meta: { simple: true } },
   { path: '/restablecer-contrasena', name: 'restablecer-contrasena', component: () => import('../views/RestablecerContrasenaView.vue'), meta: { simple: true } },
   { path: '/crear-cuenta', name: 'crear-cuenta', component: () => import('../views/CrearCuentaView.vue'), meta: { simple: true } },
+  { path: '/ayuda', name: 'ayuda', component: () => import('../views/AyudaView.vue') },
   { path: '/subastas/:id/pagar', name: 'pagar', component: () => import('../views/PagarView.vue'), meta: { requiereSesion: true } },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
@@ -22,7 +23,11 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
-  scrollBehavior: (to, from) => (to.path === from.path ? false : { top: 0 }),
+  scrollBehavior: (to, from) => {
+    // Vue Router no aplica scroll-margin-top: el margen deja la sección por debajo de la barra superior.
+    if (to.hash) return { el: to.hash, top: 96 }
+    return to.path === from.path ? false : { top: 0 }
+  },
 })
 
 router.beforeEach(to => {
