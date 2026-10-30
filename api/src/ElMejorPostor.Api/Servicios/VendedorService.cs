@@ -74,6 +74,8 @@ public class VendedorService(ElMejorPostorDbContext db, TimeProvider reloj, Avis
             throw new ReglaException("El artículo debe tener al menos una foto.");
 
         // La última ocupa el lugar de la borrada, para que el orden siga siendo 1..n (máximo 10).
+        // Son dos guardados por el índice único (articulo_id, orden); la transacción evita quedar a medias.
+        await using var transaccion = await db.Database.BeginTransactionAsync(ct);
         db.Imagenes.Remove(imagen);
         await db.SaveChangesAsync(ct);
         var ultima = imagenes[^1];
@@ -82,6 +84,7 @@ public class VendedorService(ElMejorPostorDbContext db, TimeProvider reloj, Avis
             ultima.Orden = imagen.Orden;
             await db.SaveChangesAsync(ct);
         }
+        await transaccion.CommitAsync(ct);
     }
 
     // El vendedor confirma que recibió el pago; con eso la subasta ya no pasa al siguiente postor.

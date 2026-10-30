@@ -11,7 +11,7 @@ namespace ElMejorPostor.Api.Controllers;
 [Authorize]
 [ApiController]
 [Route("api/subastas/{id:long}")]
-public class MisSubastasController(ElMejorPostorDbContext db, VendedorService vendedor) : ControllerBase
+public class MisSubastasController(ElMejorPostorDbContext db, VendedorService vendedor, IWebHostEnvironment entorno) : ControllerBase
 {
     [HttpGet("edicion")]
     public async Task<ActionResult<SubastaEdicionResponse>> Edicion(long id, CancellationToken ct)
@@ -45,6 +45,9 @@ public class MisSubastasController(ElMejorPostorDbContext db, VendedorService ve
     public async Task<IActionResult> QuitarImagen(long id, [FromQuery] string ruta, CancellationToken ct)
     {
         await vendedor.QuitarImagenAsync(id, User.UsuarioId(), ruta, ct);
+        // La ruta ya se validó contra la base: es «/fotos/<nombre>» de una foto de este artículo.
+        var archivo = Path.Combine(SubastasController.CarpetaDeFotos(entorno), Path.GetFileName(ruta));
+        if (System.IO.File.Exists(archivo)) System.IO.File.Delete(archivo);
         return NoContent();
     }
 

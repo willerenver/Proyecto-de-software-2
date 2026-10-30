@@ -52,7 +52,8 @@ public class SubastasController(ElMejorPostorDbContext db, PujaService pujas, Ti
             .Where(p => p.SubastaId == id).OrderByDescending(p => p.Id).ToListAsync(ct);
         var ventas = await db.Subastas.CountAsync(x => x.Articulo.VendedorId == s.Articulo.VendedorId && x.Estado == EstadoSubasta.Finalizada, ct);
         var yo = User.Identity?.IsAuthenticated == true ? User.UsuarioId() : (long?)null;
-        var actual = historial.FirstOrDefault()?.Monto;
+        // Las pujas descartadas (el ganador no pagó) ya no cuentan para el precio actual.
+        var actual = historial.Where(p => !p.Descartada).Max(p => (decimal?)p.Monto);
         var miAutomatica = yo is null ? null : await db.PujasAutomaticas.Where(a => a.SubastaId == id && a.PostorId == yo && a.Activa)
             .Select(a => (decimal?)a.Maximo).FirstOrDefaultAsync(ct);
         var categoria = s.Articulo.Categoria;
@@ -122,6 +123,11 @@ public class SubastasController(ElMejorPostorDbContext db, PujaService pujas, Ti
             ?? throw ReglaException.NoEncontrado("La subasta no existe.");
         if (subasta.Articulo.VendedorId != User.UsuarioId())
             throw ReglaException.Prohibido("Solo el vendedor puede subir fotos a su artículo.");
+        // Igual que editar: las fotos son parte de lo que vieron los postores.
+        if (subasta.EsFinal)
+            throw ReglaException.Conflicto("La subasta ya terminó; no se pueden cambiar las fotos.");
+        if (await db.Pujas.AnyAsync(p => p.SubastaId == id, ct))
+            throw ReglaException.Conflicto("La subasta ya tiene pujas; no se pueden cambiar las fotos.");
         if (subasta.Articulo.Imagenes.Count + fotos.Count > ImagenArticulo.Maximo)
             throw new ReglaException($"Puedes subir hasta {ImagenArticulo.Maximo} fotos.");
 
@@ -140,17 +146,31 @@ public class SubastasController(ElMejorPostorDbContext db, PujaService pujas, Ti
                 ?? throw new ReglaException($"«{Path.GetFileName(foto.FileName)}» no es una foto JPG o PNG."));
         }
 
-        var carpeta = Path.Combine(entorno.WebRootPath ?? Path.Combine(entorno.ContentRootPath, "wwwroot"), "fotos");
+        var carpeta = CarpetaDeFotos(entorno);
         Directory.CreateDirectory(carpeta);
         var orden = (short)(subasta.Articulo.Imagenes.Select(i => (int)i.Orden).DefaultIfEmpty(0).Max() + 1);
-        for (var i = 0; i < fotos.Count; i++)
+        var escritos = new List<string>();
+        try
         {
-            var nombre = $"{Guid.NewGuid():N}{extensiones[i]}";
-            await using (var destino = System.IO.File.Create(Path.Combine(carpeta, nombre)))
-                await fotos[i].CopyToAsync(destino, ct);
-            subasta.Articulo.Imagenes.Add(new ImagenArticulo { Ruta = $"/fotos/{nombre}", Orden = orden++ });
+            for (var i = 0; i < fotos.Count; i++)
+            {
+                var nombre = $"{Guid.NewGuid():N}{extensiones[i]}";
+                var archivo = Path.Combine(carpeta, nombre);
+                escritos.Add(archivo);
+                await using (var destino = System.IO.File.Create(archivo))
+                    await fotos[i].CopyToAsync(destino, ct);
+                subasta.Articulo.Imagenes.Add(new ImagenArticulo { Ruta = $"/fotos/{nombre}", Orden = orden++ });
+            }
+            await db.SaveChangesAsync(ct);
         }
-        await db.SaveChangesAsync(ct);
+        catch (Exception e)
+        {
+            // No quedan archivos sueltos. Dos subidas al mismo tiempo chocan en el índice único (articulo_id, orden).
+            foreach (var archivo in escritos) System.IO.File.Delete(archivo);
+            if (e is DbUpdateException)
+                throw ReglaException.Conflicto("Otra subida de fotos se cruzó con esta. Vuelve a intentarlo.");
+            throw;
+        }
         return subasta.Articulo.Imagenes.OrderBy(i => i.Orden).Select(i => i.Ruta).ToList();
     }
 
@@ -161,7 +181,7 @@ public class SubastasController(ElMejorPostorDbContext db, PujaService pujas, Ti
         var puja = await pujas.RegistrarAsync(id, User.UsuarioId(), r.Monto, ct);
         var subasta = await db.Subastas.AsNoTracking().SingleAsync(s => s.Id == id, ct);
         // Una puja automática de otro pudo responder enseguida.
-        var lider = await db.Pujas.AsNoTracking().Where(p => p.SubastaId == id).OrderByDescending(p => p.Id)
+        var lider = await db.Pujas.AsNoTracking().Where(p => p.SubastaId == id).OrderByDescending(p => p.Monto)
             .Select(p => new { p.Monto, p.PostorId }).FirstAsync(ct);
         return StatusCode(StatusCodes.Status201Created,
             new PujaRegistradaResponse(puja.Id, puja.Monto, lider.Monto, lider.PostorId == puja.PostorId,
@@ -184,13 +204,16 @@ public class SubastasController(ElMejorPostorDbContext db, PujaService pujas, Ti
         return NoContent();
     }
 
+    internal static string CarpetaDeFotos(IWebHostEnvironment entorno) =>
+        Path.Combine(entorno.WebRootPath ?? Path.Combine(entorno.ContentRootPath, "wwwroot"), "fotos");
+
     internal static System.Linq.Expressions.Expression<Func<Subasta, SubastaResumenResponse>> Resumen() => s =>
         new SubastaResumenResponse(
             s.Id, s.Articulo.Titulo,
             s.Articulo.Imagenes.OrderBy(i => i.Orden).Select(i => i.Ruta).FirstOrDefault(),
             s.Articulo.Categoria.CategoriaPadre != null ? s.Articulo.Categoria.CategoriaPadre.Nombre : s.Articulo.Categoria.Nombre,
             s.PrecioSalida,
-            s.Pujas.OrderByDescending(p => p.Id).Select(p => (decimal?)p.Monto).FirstOrDefault(),
+            s.Pujas.Where(p => !p.Descartada).Max(p => (decimal?)p.Monto),
             s.Pujas.Count, s.FechaInicio, s.FechaCierre, s.Estado.ToString());
 
     private static PujaResponse Puja(Puja p, long? yo) =>
