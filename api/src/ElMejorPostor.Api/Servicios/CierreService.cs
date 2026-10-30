@@ -24,7 +24,10 @@ public class CierreService(ElMejorPostorDbContext db, TimeProvider reloj, Avisos
             .ToListAsync(ct);
         foreach (var s in porCerrar)
         {
-            var ganadora = await db.Pujas.Include(p => p.Postor).Where(p => p.SubastaId == s.Id).OrderByDescending(p => p.Id).FirstOrDefaultAsync(ct);
+            await DescartarDesactivadosAsync(s.Id, ct);
+            var ganadora = await db.Pujas.Include(p => p.Postor)
+                .Where(p => p.SubastaId == s.Id && !p.Descartada && p.Postor.Activo)
+                .OrderByDescending(p => p.Monto).FirstOrDefaultAsync(ct);
             var alcanzaReserva = ganadora is not null && (s.PrecioReserva is null || ganadora.Monto >= s.PrecioReserva);
             s.Estado = alcanzaReserva ? EstadoSubasta.Finalizada : EstadoSubasta.Desierta;
             s.PujaGanadoraId = alcanzaReserva ? ganadora!.Id : null;
@@ -79,9 +82,10 @@ public class CierreService(ElMejorPostorDbContext db, TimeProvider reloj, Avisos
         avisos?.PerdisteFaltaDePago(s.PujaGanadora.Postor, s);
         var suyas = await db.Pujas.Where(p => p.SubastaId == s.Id && p.PostorId == incumplido).ToListAsync(ct);
         foreach (var p in suyas) p.Descartada = true;
+        await DescartarDesactivadosAsync(s.Id, ct);
 
         var siguiente = await db.Pujas.Include(p => p.Postor)
-            .Where(p => p.SubastaId == s.Id && !p.Descartada && p.PostorId != incumplido)
+            .Where(p => p.SubastaId == s.Id && !p.Descartada && p.PostorId != incumplido && p.Postor.Activo)
             .OrderByDescending(p => p.Monto).FirstOrDefaultAsync(ct);
         var alcanzaReserva = siguiente is not null && (s.PrecioReserva is null || siguiente.Monto >= s.PrecioReserva);
 
@@ -93,12 +97,20 @@ public class CierreService(ElMejorPostorDbContext db, TimeProvider reloj, Avisos
         if (alcanzaReserva)
         {
             avisos?.PasoATi(siguiente!.Postor, s, siguiente.Monto);
-            avisos?.Vendiste(s.Articulo.Vendedor, s, siguiente.Postor, siguiente.Monto);
+            avisos?.Vendiste(s.Articulo.Vendedor, s, siguiente!.Postor, siguiente.Monto);
         }
         else
         {
             avisos?.SinGanador(s.Articulo.Vendedor, s);
         }
+    }
+
+    // Una cuenta desactivada no puede entrar a pagar: sus pujas dejan de contar para ganar.
+    // Las consultas de arriba filtran por Postor.Activo porque este cambio todavía no está guardado.
+    private async Task DescartarDesactivadosAsync(long subastaId, CancellationToken ct)
+    {
+        var pujas = await db.Pujas.Where(p => p.SubastaId == subastaId && !p.Descartada && !p.Postor.Activo).ToListAsync(ct);
+        foreach (var p in pujas) p.Descartada = true;
     }
 }
 
