@@ -485,8 +485,8 @@ $RECYCLE.BIN/
 *.db
 *.db-shm
 *.db-wal
-src/Pujalo.Api/wwwroot/fotos/
+src/ElMejorPostor.Api/wwwroot/fotos/
 
-# Pújalo: base local y fotos que suben los usuarios
-src/Pujalo.Api/pujalo.db*
-src/Pujalo.Api/wwwroot/fotos/
+# El Mejor Postor: base local y fotos que suben los usuarios
+src/ElMejorPostor.Api/elmejorpostor.db*
+src/ElMejorPostor.Api/wwwroot/fotos/

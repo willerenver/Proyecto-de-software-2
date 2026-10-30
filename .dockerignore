@@ -6,5 +6,5 @@
 **/.vscode
 **/.DS_Store
 **/*.db
-api/src/Pujalo.Api/wwwroot/fotos
+api/src/ElMejorPostor.Api/wwwroot/fotos
 .git

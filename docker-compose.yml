@@ -1,4 +1,4 @@
-# Pújalo completo con un comando: docker compose up --build  →  http://localhost:8080
+# El Mejor Postor completo con un comando: docker compose up --build  →  http://localhost:8080
 # La primera vez crea la base y carga los datos de demostración.
 #
 # SOLO PARA DEMOSTRACIÓN LOCAL: corre en modo Development (clave de token de desarrollo, usuarios demo,
@@ -10,9 +10,9 @@ services:
     platform: linux/amd64
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: ${SA_PASSWORD:-Pujalo-Demo-2026!}
+      MSSQL_SA_PASSWORD: ${SA_PASSWORD:-ElMejorPostor-Demo-2026!}
     volumes:
-      - pujalo-datos:/var/opt/mssql
+      - elmejorpostor-datos:/var/opt/mssql
     healthcheck:
       test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "SELECT 1" -b -o /dev/null
       interval: 10s
@@ -27,11 +27,11 @@ services:
     command: ["--sembrar-demo"]
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__Pujalo: Server=sqlserver;Database=Pujalo;User Id=sa;Password=${SA_PASSWORD:-Pujalo-Demo-2026!};TrustServerCertificate=True
+      ConnectionStrings__ElMejorPostor: Server=sqlserver;Database=ElMejorPostor;User Id=sa;Password=${SA_PASSWORD:-ElMejorPostor-Demo-2026!};TrustServerCertificate=True
       Web__Url: http://localhost:8080
       Proxy__Confiable: "true"
     volumes:
-      - pujalo-fotos:/app/wwwroot/fotos
+      - elmejorpostor-fotos:/app/wwwroot/fotos
     depends_on:
       sqlserver:
         condition: service_healthy
@@ -46,5 +46,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  pujalo-datos:
-  pujalo-fotos:
+  elmejorpostor-datos:
+  elmejorpostor-fotos:
