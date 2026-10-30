@@ -43,7 +43,15 @@ public class AuthController(ElMejorPostorDbContext db, TokenService tokens, IPas
         };
         usuario.ContrasenaHash = hasher.HashPassword(usuario, r.Contrasena);
         db.Usuarios.Add(usuario);
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            // Otro registro con el mismo correo o cédula entró entre la revisión de arriba y este guardado.
+            throw ReglaException.Conflicto("Ya existe una cuenta con ese correo o esa cédula.");
+        }
         return Sesion(usuario);
     }
 
