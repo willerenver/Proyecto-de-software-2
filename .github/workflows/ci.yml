@@ -1,0 +1,82 @@
+# Integración continua: en cada push y pull request corre las pruebas de la API, compila el frontend
+# y recorre la aplicación completa con Playwright sobre docker compose.
+name: CI
+
+on:
+  push:
+    branches: [main, "feature/**"]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: API · pruebas de reglas de negocio
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet test --configuration Release
+      - name: Sin paquetes con vulnerabilidades conocidas
+        run: |
+          dotnet list package --vulnerable --include-transitive | tee vulnerables.txt
+          ! grep -q "has the following vulnerable packages" vulnerables.txt
+
+  frontend:
+    name: Frontend · compilación
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
+  e2e:
+    name: Punta a punta · Playwright
+    needs: [api, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Levantar SQL Server, API y frontend
+        run: docker compose up --build -d
+      - name: Esperar a que la aplicación responda
+        run: |
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8080/api/salud && exit 0
+            sleep 5
+          done
+          docker compose logs
+          exit 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - working-directory: frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm run e2e
+      - name: Registros de los contenedores
+        if: failure()
+        run: docker compose logs
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: informe-playwright
+          path: frontend/playwright-report
+          retention-days: 7
