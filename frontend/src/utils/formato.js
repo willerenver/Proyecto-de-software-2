@@ -81,8 +81,13 @@ export function haceTiempo(fecha, ahora = Date.now()) {
   return `hace ${d} ${d === 1 ? 'día' : 'días'}`
 }
 
-// Oculta parte del nombre del postor: «jesus.p» → «j***s.p».
-export function postorOculto(nombre) {
-  if (nombre.length <= 3) return `${nombre[0]}***`
-  return `${nombre[0]}***${nombre.slice(-3)}`
+// Valores de la columna articulo.condicion y cómo se muestran.
+export const CONDICIONES = {
+  nuevo: 'Nuevo',
+  como_nuevo: 'Usado, como nuevo',
+  buen_estado: 'Usado, buen estado',
+  con_detalles: 'Usado, con detalles',
+  restaurado: 'Restaurado',
 }
+
+export const condicion = valor => CONDICIONES[valor] ?? valor

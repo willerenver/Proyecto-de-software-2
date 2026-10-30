@@ -1,0 +1,57 @@
+# El Mejor Postor completo con un comando: docker compose up --build  →  http://localhost:8080
+# La primera vez crea la base y carga los datos de demostración.
+#
+# SOLO PARA DEMOSTRACIÓN LOCAL: corre en modo Development (clave de token de desarrollo, usuarios demo,
+# correos en la consola) y solo escucha en 127.0.0.1. Para publicarlo en un servidor hace falta otra
+# configuración: Production, clave Jwt propia, SMTP y contraseñas por variables de entorno.
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${SA_PASSWORD:-ElMejorPostor-Demo-2026!}
+    volumes:
+      - elmejorpostor-datos:/var/opt/mssql
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "SELECT 1" -b -o /dev/null
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    command: ["--sembrar-demo"]
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__ElMejorPostor: Server=sqlserver;Database=ElMejorPostor;User Id=sa;Password=${SA_PASSWORD:-ElMejorPostor-Demo-2026!};TrustServerCertificate=True
+      Web__Url: http://localhost:8080
+      Proxy__Confiable: "true"
+    volumes:
+      - elmejorpostor-fotos:/app/wwwroot/fotos
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build: ./frontend
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      - api
+    # Pasa por nginx hasta la API y SQL Server: si responde, la aplicación completa está en pie.
+    healthcheck:
+      test: wget -qO /dev/null http://127.0.0.1/api/salud || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  elmejorpostor-datos:
+  elmejorpostor-fotos:

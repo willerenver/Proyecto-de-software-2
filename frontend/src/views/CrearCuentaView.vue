@@ -1,10 +1,15 @@
 <script setup>
 import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { api } from '../api/cliente'
+import { iniciarSesion, rutaDeRegreso } from '../stores/sesion'
 
+const route = useRoute()
 const router = useRouter()
 const form = reactive({ nombre: '', apellido: '', correo: '', telefono: '', cedula: '', contrasena: '', acepta: false })
 const errores = ref({})
+const error = ref('')
+const enviando = ref(false)
 
 // «00112345678» → «001-1234567-8».
 function formatearCedula(valor) {
@@ -13,7 +18,8 @@ function formatearCedula(valor) {
 }
 
 // Mismas reglas que el diccionario de datos (largos de columna) y el diseño (contraseña).
-function crear() {
+async function crear() {
+  error.value = ''
   const e = {}
   if (!form.nombre.trim()) e.nombre = 'Escribe tu nombre.'
   if (!form.apellido.trim()) e.apellido = 'Escribe tu apellido.'
@@ -23,7 +29,20 @@ function crear() {
   if (form.contrasena.length < 8 || !/\d/.test(form.contrasena)) e.contrasena = 'Mínimo 8 caracteres, con al menos un número.'
   if (!form.acepta) e.acepta = 'Debes aceptar los términos para crear la cuenta.'
   errores.value = e
-  if (!Object.keys(e).length) router.push('/')
+  if (Object.keys(e).length) return
+
+  enviando.value = true
+  try {
+    const { acepta, ...cuerpo } = form
+    const datos = await api('/api/auth/registro', { metodo: 'POST', cuerpo })
+    iniciarSesion(datos, true)
+    router.replace(rutaDeRegreso(route.query.volver))
+  } catch (err) {
+    errores.value = err.errores
+    error.value = err.message
+  } finally {
+    enviando.value = false
+  }
 }
 </script>
 
@@ -32,7 +51,7 @@ function crear() {
     <form class="panel tarjeta d-flex flex-column gap-3" novalidate @submit.prevent="crear">
       <div>
         <h1 class="fw-bold mb-1 titulo">Crea tu cuenta</h1>
-        <p class="texto-gris mb-0">Con una cuenta puedes pujar, vender y guardar favoritos.</p>
+        <p class="texto-gris mb-0">Con una cuenta puedes pujar y vender.</p>
       </div>
       <div class="row g-3">
         <div class="col-sm">
@@ -73,8 +92,9 @@ function crear() {
         <label for="acepta" class="form-check-label">Acepto los términos y las reglas de las subastas</label>
         <div class="invalid-feedback">{{ errores.acepta }}</div>
       </div>
-      <button type="submit" class="btn btn-primary btn-lg">Crear cuenta</button>
-      <p class="mb-0">¿Ya tienes cuenta? <RouterLink to="/iniciar-sesion" class="fw-medium">Inicia sesión</RouterLink></p>
+      <div v-if="error" class="alert alert-danger mb-0 py-2" role="alert">{{ error }}</div>
+      <button type="submit" class="btn btn-primary btn-lg" :disabled="enviando">{{ enviando ? 'Creando la cuenta…' : 'Crear cuenta' }}</button>
+      <p class="mb-0">¿Ya tienes cuenta? <RouterLink :to="{ name: 'iniciar-sesion', query: route.query }" class="fw-medium">Inicia sesión</RouterLink></p>
     </form>
   </div>
 </template>

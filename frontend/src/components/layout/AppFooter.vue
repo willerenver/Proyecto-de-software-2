@@ -1,10 +1,31 @@
 <script setup>
-import LogoPujalo from '../LogoPujalo.vue'
+import LogoElMejorPostor from '../LogoElMejorPostor.vue'
 
 const columnas = [
-  { titulo: 'Comprar', enlaces: ['Cómo pujar', 'Subastas que terminan hoy', 'Categorías'] },
-  { titulo: 'Vender', enlaces: ['Publicar un artículo', 'Comisiones', 'Consejos para tus fotos'] },
-  { titulo: 'Ayuda', enlaces: ['Preguntas frecuentes', 'Reglas de las subastas', 'Contacto'] },
+  {
+    titulo: 'Comprar',
+    enlaces: [
+      { texto: 'Subastas abiertas', a: '/' },
+      { texto: 'Cómo pujar', a: '/ayuda#pujar' },
+      { texto: 'Mis pujas', a: '/mis-pujas' },
+    ],
+  },
+  {
+    titulo: 'Vender',
+    enlaces: [
+      { texto: 'Publicar un artículo', a: '/publicar' },
+      { texto: 'Mis ventas', a: '/mis-ventas' },
+      { texto: 'Consejos para tus fotos', a: '/ayuda#vender' },
+    ],
+  },
+  {
+    titulo: 'Ayuda',
+    enlaces: [
+      { texto: 'Reglas de las subastas', a: '/ayuda#reglas' },
+      { texto: 'Pago y entrega', a: '/ayuda#pago' },
+      { texto: 'Todas las preguntas', a: '/ayuda' },
+    ],
+  },
 ]
 </script>
 
@@ -13,17 +34,17 @@ const columnas = [
     <div class="contenedor pt-5 pb-4">
       <div class="d-flex gap-5 mb-4">
         <div class="marca">
-          <LogoPujalo claro />
+          <LogoElMejorPostor claro />
           <p class="mt-3 mb-0">Compra y vende por subasta con gente de tu ciudad.</p>
         </div>
         <div v-for="c in columnas" :key="c.titulo" class="d-flex flex-column gap-2">
           <strong class="text-white">{{ c.titulo }}</strong>
-          <a v-for="e in c.enlaces" :key="e" href="#" @click.prevent>{{ e }}</a>
+          <RouterLink v-for="e in c.enlaces" :key="e.a" :to="e.a">{{ e.texto }}</RouterLink>
         </div>
       </div>
       <div class="legal d-flex justify-content-between pt-4">
-        <span>© 2026 Pújalo · Proyecto universitario</span>
-        <span>Términos · Privacidad</span>
+        <span>© 2026 El Mejor Postor · Proyecto universitario</span>
+        <RouterLink to="/ayuda#privacidad">Privacidad</RouterLink>
       </div>
     </div>
   </footer>
@@ -31,7 +52,7 @@ const columnas = [
 
 <style scoped>
 .pie {
-  background: var(--pj-primario-oscuro);
+  background: var(--mp-primario-oscuro);
   color: #b8c7da;
   font-size: 14px;
 }

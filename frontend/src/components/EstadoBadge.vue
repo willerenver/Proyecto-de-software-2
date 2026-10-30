@@ -29,7 +29,7 @@ defineProps({
 }
 
 .cierra-pronto {
-  background: var(--pj-peligro);
+  background: var(--mp-peligro);
   color: #fff;
 }
 
@@ -39,7 +39,7 @@ defineProps({
 }
 
 .nueva {
-  background: var(--pj-primario);
+  background: var(--mp-primario);
   color: #fff;
 }
 

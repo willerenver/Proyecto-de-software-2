@@ -1,16 +1,17 @@
 <script setup>
-import { nextTick } from 'vue'
+import { computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { Gavel, House, Plus, Search, User } from 'lucide-vue-next'
+import { sesion } from '../../stores/sesion'
 
 const router = useRouter()
 
-const items = [
+const items = computed(() => [
   { to: '/', texto: 'Inicio', icono: House },
   { to: '/publicar', texto: 'Vender', icono: Plus },
   { to: '/mis-pujas', texto: 'Mis pujas', icono: Gavel },
-  { to: '/iniciar-sesion', texto: 'Cuenta', icono: User },
-]
+  { to: sesion.token ? '/mis-ventas' : '/iniciar-sesion', texto: 'Cuenta', icono: User },
+])
 
 
 async function buscar() {
@@ -45,7 +46,7 @@ async function buscar() {
   justify-content: space-between;
   padding: 8px 8px 24px;
   background: #fff;
-  border-top: 1px solid var(--pj-borde);
+  border-top: 1px solid var(--mp-borde);
 }
 
 .item {
@@ -58,11 +59,11 @@ async function buscar() {
   border: 0;
   background: none;
   font-size: 11px;
-  color: var(--pj-gris);
+  color: var(--mp-gris);
 }
 
 .item.activo {
-  color: var(--pj-primario);
+  color: var(--mp-primario);
   font-weight: 500;
 }
 

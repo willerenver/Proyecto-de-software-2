@@ -1,0 +1,10 @@
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/.idea
+**/.vscode
+**/.DS_Store
+**/*.db
+api/src/ElMejorPostor.Api/wwwroot/fotos
+.git

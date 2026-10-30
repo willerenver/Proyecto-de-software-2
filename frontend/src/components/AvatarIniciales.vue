@@ -15,8 +15,8 @@ defineProps({
   place-items: center;
   flex-shrink: 0;
   border-radius: 50%;
-  background: var(--pj-primario-suave);
-  color: var(--pj-primario);
+  background: var(--mp-primario-suave);
+  color: var(--mp-primario);
   font-weight: 700;
 }
 </style>
