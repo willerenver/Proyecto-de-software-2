@@ -53,7 +53,7 @@ La versión móvil son las mismas pantallas adaptadas al ancho del teléfono. Pu
 ## Pruebas
 
 ```bash
-cd api && dotnet test                         # 41 pruebas de las reglas de negocio (no necesitan SQL Server)
+cd api && dotnet test                         # 48 pruebas de las reglas de negocio (no necesitan SQL Server)
 cd frontend && npx playwright install chromium   # solo la primera vez
 cd frontend && npm run e2e                    # 16 pruebas de punta a punta contra http://localhost:8080
 ```
