@@ -42,18 +42,18 @@ public record CrearSubastaRequest(
     [Required(ErrorMessage = "Describe el artículo."), StringLength(2000, ErrorMessage = "Máximo 2000 caracteres.")] string Descripcion,
     [Required(ErrorMessage = "Elige el estado del artículo.")] string Condicion,
     [Range(1, int.MaxValue, ErrorMessage = "Elige una categoría.")] int CategoriaId,
-    [Range(typeof(decimal), "0.01", "9999999999.99", ErrorMessage = "El precio de salida debe ser mayor que 0.")] decimal PrecioSalida,
-    [Range(typeof(decimal), "0.01", "9999999999.99", ErrorMessage = "El incremento mínimo debe ser mayor que 0.")] decimal IncrementoMinimo,
-    decimal? PrecioReserva,
+    [Range(typeof(decimal), "0.01", "999999999.99", ErrorMessage = "El precio de salida debe estar entre RD$ 0.01 y RD$ 999,999,999.99.")] decimal PrecioSalida,
+    [Range(typeof(decimal), "0.01", "999999999.99", ErrorMessage = "El incremento mínimo debe estar entre RD$ 0.01 y RD$ 999,999,999.99.")] decimal IncrementoMinimo,
+    [Range(typeof(decimal), "0.01", "999999999.99", ErrorMessage = "La reserva debe estar entre RD$ 0.01 y RD$ 999,999,999.99.")] decimal? PrecioReserva,
     DateTime FechaInicio,
     int DuracionDias,
     bool ExtenderAlFinal = true,
     bool PermiteRetiro = true,
     bool PermiteEnvio = false);
 
-public record PujaAutomaticaRequest([Range(typeof(decimal), "0.01", "9999999999.99", ErrorMessage = "Escribe un máximo mayor que 0.")] decimal Maximo);
+public record PujaAutomaticaRequest([Range(typeof(decimal), "0.01", "999999999.99", ErrorMessage = "El máximo debe estar entre RD$ 0.01 y RD$ 999,999,999.99.")] decimal Maximo);
 
-public record CrearPujaRequest([Range(typeof(decimal), "0.01", "9999999999.99", ErrorMessage = "Escribe un monto mayor que 0.")] decimal Monto);
+public record CrearPujaRequest([Range(typeof(decimal), "0.01", "999999999.99", ErrorMessage = "El monto debe estar entre RD$ 0.01 y RD$ 999,999,999.99.")] decimal Monto);
 
 public record PujaRegistradaResponse(long Id, decimal Monto, decimal PujaActual, bool VasGanando, decimal MontoMinimoSiguiente, DateTime FechaCierre);
 

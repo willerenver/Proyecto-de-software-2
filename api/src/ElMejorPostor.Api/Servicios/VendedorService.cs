@@ -18,6 +18,8 @@ public class VendedorService(ElMejorPostorDbContext db, TimeProvider reloj, Avis
             throw new ReglaException("Elige un estado válido para el artículo.");
         if (!Subasta.DuracionesDias.Contains(r.DuracionDias))
             throw new ReglaException("La duración debe ser de 1, 3, 5 o 7 días.");
+        if (r.PrecioSalida > Subasta.MontoMaximo || r.IncrementoMinimo > Subasta.MontoMaximo || r.PrecioReserva > Subasta.MontoMaximo)
+            throw new ReglaException(Subasta.MensajeMontoMaximo);
         if (r.PrecioReserva is not null && r.PrecioReserva < r.PrecioSalida)
             throw new ReglaException("La reserva no puede ser menor que el precio de salida.");
         if (!r.PermiteRetiro && !r.PermiteEnvio)

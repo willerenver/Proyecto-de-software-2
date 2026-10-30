@@ -14,6 +14,9 @@ public class Subasta
     public static readonly int[] DuracionesDias = [1, 3, 5, 7];
     public static readonly TimeSpan VentanaExtension = TimeSpan.FromMinutes(2);
     public static readonly TimeSpan PlazoParaPagar = TimeSpan.FromHours(48);
+    // Tope de cualquier monto: así una puja más el incremento nunca desborda decimal(12,2).
+    public const decimal MontoMaximo = 999_999_999.99m;
+    public static string MensajeMontoMaximo => $"El monto no puede pasar de RD$ {MontoMaximo:N2}.";
 
     public long Id { get; set; }
     public long ArticuloId { get; set; }

@@ -17,6 +17,8 @@ public class PujaService(ElMejorPostorDbContext db, TimeProvider reloj, Avisos? 
         var (subasta, ahora) = await AbiertaParaAsync(subastaId, postorId, ct);
         if (decimal.Round(monto, 2) != monto)
             throw new ReglaException("El monto admite como máximo dos decimales.");
+        if (monto > Subasta.MontoMaximo)
+            throw new ReglaException(Subasta.MensajeMontoMaximo);
 
         var estado = await EstadoAsync(subasta, ct);
         var minimo = MontoMinimo(subasta, estado.Monto);
@@ -35,6 +37,8 @@ public class PujaService(ElMejorPostorDbContext db, TimeProvider reloj, Avisos? 
         var (subasta, ahora) = await AbiertaParaAsync(subastaId, postorId, ct);
         if (decimal.Round(maximo, 2) != maximo)
             throw new ReglaException("El máximo admite como máximo dos decimales.");
+        if (maximo > Subasta.MontoMaximo)
+            throw new ReglaException(Subasta.MensajeMontoMaximo);
 
         var estado = await EstadoAsync(subasta, ct);
         var minimo = estado.LiderId == postorId ? estado.Monto!.Value + subasta.IncrementoMinimo : MontoMinimo(subasta, estado.Monto);
