@@ -5,7 +5,7 @@ test('crear una cuenta deja la sesión abierta', async ({ page }) => {
   await page.goto('/crear-cuenta')
   await page.locator('#nombre').fill('Prueba')
   await page.locator('#apellido').fill('Automática')
-  await page.locator('#correo').fill(`prueba${sufijo}@pujalo.test`)
+  await page.locator('#correo').fill(`prueba${sufijo}@elmejorpostor.test`)
   await page.locator('#telefono').fill('809-555-0199')
   await page.locator('#cedula').fill(`402${sufijo}`)
   await page.locator('#contrasena').fill('clave12345')
@@ -27,7 +27,7 @@ test('el registro valida los datos antes de enviarlos', async ({ page }) => {
 
 test('una contraseña equivocada no deja entrar', async ({ page }) => {
   await page.goto('/iniciar-sesion')
-  await page.locator('#correo').fill('maria.r@pujalo.test')
+  await page.locator('#correo').fill('maria.r@elmejorpostor.test')
   await page.locator('#contrasena').fill('no-es-esta-1')
   await page.getByRole('button', { name: 'Entrar' }).click()
 

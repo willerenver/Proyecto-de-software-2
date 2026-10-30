@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-export const CONTRASENA = 'Demo-Pujalo-2026'
+export const CONTRASENA = 'Demo-ElMejorPostor-2026'
 export const sesionDe = usuario => `e2e/.sesiones/${usuario}.json`
 
 // Entra con «Recordarme» para que la sesión quede en localStorage y se pueda guardar.

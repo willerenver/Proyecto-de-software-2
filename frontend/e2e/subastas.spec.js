@@ -104,7 +104,7 @@ test.describe('con la sesión del administrador', () => {
     await page.goto('/admin')
     await expect(page.getByRole('heading', { name: 'Administración' })).toBeVisible()
     await page.getByRole('button', { name: /Usuarios/ }).click()
-    await expect(page.getByRole('cell', { name: 'maria.r@pujalo.test' })).toBeVisible()
+    await expect(page.getByRole('cell', { name: 'maria.r@elmejorpostor.test' })).toBeVisible()
     await page.getByRole('button', { name: /Categorías/ }).click()
     await expect(page.getByRole('cell', { name: 'Fotografía' })).toBeVisible()
   })

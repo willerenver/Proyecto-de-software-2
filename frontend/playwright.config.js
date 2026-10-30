@@ -8,7 +8,7 @@ export default defineConfig({
   timeout: 30000,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: process.env.PUJALO_URL ?? 'http://localhost:8080',
+    baseURL: process.env.ELMEJORPOSTOR_URL ?? 'http://localhost:8080',
     locale: 'es-DO',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',

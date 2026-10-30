@@ -36,8 +36,8 @@ const bloques = computed(() => {
 .bloque {
   width: 70px;
   padding: 8px 0;
-  background: var(--pj-claro);
-  border: 1px solid var(--pj-borde);
+  background: var(--mp-claro);
+  border: 1px solid var(--mp-borde);
   border-radius: 6px;
   display: flex;
   flex-direction: column;
@@ -51,6 +51,6 @@ const bloques = computed(() => {
 
 .bloque span {
   font-size: 11px;
-  color: var(--pj-gris);
+  color: var(--mp-gris);
 }
 </style>

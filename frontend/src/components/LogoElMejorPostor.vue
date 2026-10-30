@@ -5,9 +5,9 @@ defineProps({ claro: { type: Boolean, default: false } })
 </script>
 
 <template>
-  <RouterLink to="/" class="logo" :class="{ claro }" aria-label="Pújalo, ir al inicio">
+  <RouterLink to="/" class="logo" :class="{ claro }" aria-label="El Mejor Postor, ir al inicio">
     <span class="marca"><Gavel :size="20" :stroke-width="2.2" /></span>
-    <span class="nombre">Pújalo</span>
+    <span class="nombre">El Mejor Postor</span>
   </RouterLink>
 </template>
 
@@ -24,19 +24,20 @@ defineProps({ claro: { type: Boolean, default: false } })
   border-radius: 8px;
   display: grid;
   place-items: center;
-  background: var(--pj-primario);
+  background: var(--mp-primario);
   color: #fff;
 }
 
 .nombre {
   font-size: 24px;
+  white-space: nowrap;
   font-weight: 700;
-  color: var(--pj-primario);
+  color: var(--mp-primario);
 }
 
 .claro .marca {
   background: #fff;
-  color: var(--pj-primario);
+  color: var(--mp-primario);
 }
 
 .claro .nombre {

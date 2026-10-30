@@ -145,8 +145,8 @@ const menosDeUnaHora = f => new Date(f.fechaCierre).getTime() - ahora.value < 36
 }
 
 thead th {
-  background: var(--pj-claro);
-  color: var(--pj-gris);
+  background: var(--mp-claro);
+  color: var(--mp-gris);
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
@@ -156,7 +156,7 @@ thead th {
   display: grid;
   place-items: center;
   background: #e9ecef;
-  color: var(--pj-gris);
+  color: var(--mp-gris);
 }
 
 .miniatura {

@@ -26,7 +26,7 @@ defineProps({
   display: flex;
   align-items: center;
   gap: 12px;
-  color: var(--pj-texto);
+  color: var(--mp-texto);
 }
 
 .mini img,
@@ -56,7 +56,7 @@ defineProps({
   gap: 4px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--pj-peligro);
+  color: var(--mp-peligro);
 }
 
 .min-w-0 {

@@ -47,7 +47,7 @@ const enlace = computed(() => (props.subasta.id ? `/subastas/${props.subasta.id}
 <style scoped>
 .card-subasta {
   background: #fff;
-  border: 1px solid var(--pj-borde);
+  border: 1px solid var(--mp-borde);
   border-radius: 8px;
   overflow: hidden;
   display: flex;
@@ -81,7 +81,7 @@ const enlace = computed(() => (props.subasta.id ? `/subastas/${props.subasta.id}
   inset: 0;
   display: grid;
   place-items: center;
-  color: var(--pj-gris-claro);
+  color: var(--mp-gris-claro);
 }
 
 .cuerpo {
@@ -93,7 +93,7 @@ const enlace = computed(() => (props.subasta.id ? `/subastas/${props.subasta.id}
 }
 
 .titulo {
-  color: var(--pj-texto);
+  color: var(--mp-texto);
   font-size: 15px;
   font-weight: 500;
   line-height: 20px;
@@ -108,7 +108,7 @@ const enlace = computed(() => (props.subasta.id ? `/subastas/${props.subasta.id}
 
 .etiqueta-precio {
   font-size: 12px;
-  color: var(--pj-gris);
+  color: var(--mp-gris);
 }
 
 .monto {
@@ -122,7 +122,7 @@ const enlace = computed(() => (props.subasta.id ? `/subastas/${props.subasta.id}
   justify-content: space-between;
   align-items: center;
   font-size: 13px;
-  color: var(--pj-gris);
+  color: var(--mp-gris);
 }
 
 .tiempo {
@@ -133,7 +133,7 @@ const enlace = computed(() => (props.subasta.id ? `/subastas/${props.subasta.id}
 }
 
 .tiempo.urgente {
-  color: var(--pj-peligro);
+  color: var(--mp-peligro);
 }
 
 /* Versión de la pantalla 09: sin botón, textos más pequeños. */

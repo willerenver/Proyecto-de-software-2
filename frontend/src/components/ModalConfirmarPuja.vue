@@ -77,7 +77,7 @@ footer {
 
 header {
   justify-content: space-between;
-  border-bottom: 1px solid var(--pj-borde);
+  border-bottom: 1px solid var(--mp-borde);
 }
 
 header h2 {
@@ -89,7 +89,7 @@ header h2 {
 .cerrar {
   border: 0;
   background: none;
-  color: var(--pj-gris);
+  color: var(--mp-gris);
 }
 
 .cuerpo {
@@ -112,13 +112,13 @@ header h2 {
   flex-direction: column;
   gap: 10px;
   padding: 16px;
-  background: var(--pj-claro);
+  background: var(--mp-claro);
   border-radius: 6px;
 }
 
 footer {
   justify-content: flex-end;
   gap: 10px;
-  border-top: 1px solid var(--pj-borde);
+  border-top: 1px solid var(--mp-borde);
 }
 </style>

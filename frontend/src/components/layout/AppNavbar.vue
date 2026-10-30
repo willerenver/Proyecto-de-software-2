@@ -2,7 +2,7 @@
 import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ChevronDown, LogOut, Search } from 'lucide-vue-next'
-import LogoPujalo from '../LogoPujalo.vue'
+import LogoElMejorPostor from '../LogoElMejorPostor.vue'
 import AvatarIniciales from '../AvatarIniciales.vue'
 import { categorias, cargarCategorias } from '../../stores/categorias'
 import { cerrarSesion, esAdministrador, sesion } from '../../stores/sesion'
@@ -37,11 +37,11 @@ function salir() {
 </script>
 
 <template>
-  <header class="navbar-pujalo">
+  <header class="navbar-elmejorpostor">
     <!-- Escritorio -->
     <div class="barra-superior d-none d-lg-block">
       <div class="contenedor d-flex align-items-center gap-4 py-3">
-        <LogoPujalo />
+        <LogoElMejorPostor />
         <form class="buscador flex-grow-1" role="search" @submit.prevent="buscar">
           <select v-model="categoria" class="categoria" aria-label="Categoría">
             <option value="">Todas</option>
@@ -84,13 +84,13 @@ function salir() {
     <!-- Móvil (09 y 10) -->
     <div v-if="!route.meta.cabeceraMovilPropia" class="d-lg-none bg-white px-3 pt-3 pb-2">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <LogoPujalo />
+        <LogoElMejorPostor />
         <RouterLink v-if="!sesion.usuario" :to="{ name: 'iniciar-sesion', query: { volver: route.fullPath } }" class="fw-medium">Entrar</RouterLink>
         <AvatarIniciales v-else :iniciales="sesion.usuario.iniciales" :tam="32" />
       </div>
       <form class="buscador-movil" role="search" @submit.prevent="buscar">
         <Search :size="18" class="texto-gris" />
-        <input v-model="texto" type="search" maxlength="80" placeholder="Buscar en Pújalo" aria-label="Buscar" />
+        <input v-model="texto" type="search" maxlength="80" placeholder="Buscar en El Mejor Postor" aria-label="Buscar" />
       </form>
     </div>
   </header>
@@ -99,13 +99,13 @@ function salir() {
 <style scoped>
 .barra-superior {
   background: #fff;
-  border-bottom: 1px solid var(--pj-borde);
+  border-bottom: 1px solid var(--mp-borde);
 }
 
 .buscador {
   display: flex;
   height: 44px;
-  border: 1px solid var(--pj-borde);
+  border: 1px solid var(--mp-borde);
   border-radius: 6px;
   overflow: hidden;
   background: #fff;
@@ -113,7 +113,7 @@ function salir() {
 
 .categoria {
   border: 0;
-  background: var(--pj-claro);
+  background: var(--mp-claro);
   padding: 0 14px;
   font-size: 14px;
 }
@@ -128,7 +128,7 @@ function salir() {
 .boton-buscar {
   width: 56px;
   border: 0;
-  background: var(--pj-primario);
+  background: var(--mp-primario);
   color: #fff;
 }
 
@@ -139,7 +139,7 @@ function salir() {
   border: 0;
   background: none;
   padding: 0;
-  color: var(--pj-gris);
+  color: var(--mp-gris);
 }
 
 .menu-cuenta {
@@ -149,7 +149,7 @@ function salir() {
   z-index: 1040;
   width: 240px;
   background: #fff;
-  border: 1px solid var(--pj-borde);
+  border: 1px solid var(--mp-borde);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   overflow: hidden;
@@ -164,23 +164,23 @@ function salir() {
   padding: 10px 16px;
   border: 0;
   background: none;
-  color: var(--pj-texto);
+  color: var(--mp-texto);
   font-size: 14px;
   text-align: left;
 }
 
 .menu-cuenta a:hover,
 .menu-cuenta .salir:hover {
-  background: var(--pj-claro);
+  background: var(--mp-claro);
 }
 
 .menu-cuenta .salir {
-  border-top: 1px solid var(--pj-borde);
-  color: var(--pj-gris);
+  border-top: 1px solid var(--mp-borde);
+  color: var(--mp-gris);
 }
 
 .barra-categorias {
-  background: var(--pj-primario);
+  background: var(--mp-primario);
   font-size: 14px;
 }
 
@@ -199,9 +199,9 @@ function salir() {
   gap: 8px;
   height: 42px;
   padding: 0 12px;
-  border: 1px solid var(--pj-borde);
+  border: 1px solid var(--mp-borde);
   border-radius: 6px;
-  background: var(--pj-claro);
+  background: var(--mp-claro);
 }
 
 .buscador-movil input {

@@ -50,18 +50,18 @@ function salir() {
   padding: 12px 20px;
   border: 0;
   background: none;
-  color: var(--pj-texto);
+  color: var(--mp-texto);
   text-align: left;
 }
 
 .item.router-link-exact-active {
-  background: var(--pj-primario-suave);
-  color: var(--pj-primario);
+  background: var(--mp-primario-suave);
+  color: var(--mp-primario);
   font-weight: 500;
 }
 
 .item.salir {
-  color: var(--pj-gris);
+  color: var(--mp-gris);
 }
 
 .min-w-0 {

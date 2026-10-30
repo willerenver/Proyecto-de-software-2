@@ -18,7 +18,7 @@ const guardando = ref(false)
 // Se conserva donde estaba guardada la sesión («Recordarme»).
 const recordada = () => {
   try {
-    return !!localStorage.getItem('pujalo.sesion')
+    return !!localStorage.getItem('elmejorpostor.sesion')
   } catch {
     return false
   }

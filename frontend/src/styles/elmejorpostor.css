@@ -1,33 +1,33 @@
 /* Tokens del diseño de Figma (página «Estilos y componentes») sobre Bootstrap 5. */
 :root {
-  --pj-primario: #0d4c92;
-  --pj-primario-oscuro: #0a2e57;
-  --pj-primario-suave: #e7eff9;
-  --pj-puja: #ffc107;
-  --pj-texto: #212529;
-  --pj-gris: #6c757d;
-  --pj-gris-claro: #adb5bd;
-  --pj-borde: #dee2e6;
-  --pj-claro: #f8f9fa;
-  --pj-fondo: #f1f3f5;
-  --pj-exito: #198754;
-  --pj-peligro: #dc3545;
+  --mp-primario: #0d4c92;
+  --mp-primario-oscuro: #0a2e57;
+  --mp-primario-suave: #e7eff9;
+  --mp-puja: #ffc107;
+  --mp-texto: #212529;
+  --mp-gris: #6c757d;
+  --mp-gris-claro: #adb5bd;
+  --mp-borde: #dee2e6;
+  --mp-claro: #f8f9fa;
+  --mp-fondo: #f1f3f5;
+  --mp-exito: #198754;
+  --mp-peligro: #dc3545;
 
-  --bs-primary: var(--pj-primario);
+  --bs-primary: var(--mp-primario);
   --bs-primary-rgb: 13, 76, 146;
-  --bs-link-color: var(--pj-primario);
+  --bs-link-color: var(--mp-primario);
   --bs-link-color-rgb: 13, 76, 146;
-  --bs-link-hover-color: var(--pj-primario-oscuro);
+  --bs-link-hover-color: var(--mp-primario-oscuro);
   --bs-body-font-family: 'Roboto', system-ui, sans-serif;
-  --bs-body-color: var(--pj-texto);
+  --bs-body-color: var(--mp-texto);
   --bs-body-bg: #fff;
-  --bs-border-color: var(--pj-borde);
+  --bs-border-color: var(--mp-borde);
   --bs-border-radius: 6px;
 }
 
 body {
   font-size: 15px;
-  background: var(--pj-fondo);
+  background: var(--mp-fondo);
 }
 
 a {
@@ -56,35 +56,35 @@ a {
 }
 
 .btn-primary {
-  --bs-btn-bg: var(--pj-primario);
-  --bs-btn-border-color: var(--pj-primario);
-  --bs-btn-hover-bg: var(--pj-primario-oscuro);
-  --bs-btn-hover-border-color: var(--pj-primario-oscuro);
-  --bs-btn-active-bg: var(--pj-primario-oscuro);
-  --bs-btn-disabled-bg: var(--pj-primario);
+  --bs-btn-bg: var(--mp-primario);
+  --bs-btn-border-color: var(--mp-primario);
+  --bs-btn-hover-bg: var(--mp-primario-oscuro);
+  --bs-btn-hover-border-color: var(--mp-primario-oscuro);
+  --bs-btn-active-bg: var(--mp-primario-oscuro);
+  --bs-btn-disabled-bg: var(--mp-primario);
 }
 
 /* Botón amarillo de «Pujar» (.btn-warning en el diseño). */
 .btn-pujar {
-  --bs-btn-color: var(--pj-texto);
-  --bs-btn-bg: var(--pj-puja);
-  --bs-btn-border-color: var(--pj-puja);
-  --bs-btn-hover-color: var(--pj-texto);
+  --bs-btn-color: var(--mp-texto);
+  --bs-btn-bg: var(--mp-puja);
+  --bs-btn-border-color: var(--mp-puja);
+  --bs-btn-hover-color: var(--mp-texto);
   --bs-btn-hover-bg: #ffb300;
   --bs-btn-hover-border-color: #ffb300;
   --bs-btn-active-bg: #ffa000;
 }
 
 .btn-outline-primary {
-  --bs-btn-color: var(--pj-primario);
-  --bs-btn-border-color: var(--pj-primario);
-  --bs-btn-hover-bg: var(--pj-primario);
-  --bs-btn-hover-border-color: var(--pj-primario);
+  --bs-btn-color: var(--mp-primario);
+  --bs-btn-border-color: var(--mp-primario);
+  --bs-btn-hover-bg: var(--mp-primario);
+  --bs-btn-hover-border-color: var(--mp-primario);
 }
 
 .btn-light {
   --bs-btn-bg: #fff;
-  --bs-btn-border-color: var(--pj-borde);
+  --bs-btn-border-color: var(--mp-borde);
 }
 
 .form-label {
@@ -99,34 +99,34 @@ a {
 
 .form-control:focus,
 .form-select:focus {
-  border-color: var(--pj-primario);
+  border-color: var(--mp-primario);
   box-shadow: 0 0 0 4px rgba(13, 76, 146, 0.2);
 }
 
 .form-check-input:checked {
-  background-color: var(--pj-primario);
-  border-color: var(--pj-primario);
+  background-color: var(--mp-primario);
+  border-color: var(--mp-primario);
 }
 
 .form-text {
   font-size: 13px;
-  color: var(--pj-gris);
+  color: var(--mp-gris);
 }
 
 .input-group-text {
   background: #e9ecef;
-  color: var(--pj-gris);
+  color: var(--mp-gris);
 }
 
 .panel {
   background: #fff;
-  border: 1px solid var(--pj-borde);
+  border: 1px solid var(--mp-borde);
   border-radius: 10px;
   padding: 24px;
 }
 
 .texto-gris {
-  color: var(--pj-gris);
+  color: var(--mp-gris);
 }
 
 .texto-pequeno {
@@ -140,21 +140,21 @@ a {
 }
 
 .nav-tabs .nav-link {
-  color: var(--pj-primario);
+  color: var(--mp-primario);
 }
 
 .nav-tabs .nav-link.active {
-  color: var(--pj-texto);
+  color: var(--mp-texto);
   font-weight: 500;
 }
 
 .page-link {
-  color: var(--pj-primario);
+  color: var(--mp-primario);
 }
 
 .active > .page-link {
-  background: var(--pj-primario);
-  border-color: var(--pj-primario);
+  background: var(--mp-primario);
+  border-color: var(--mp-primario);
 }
 
 @media (max-width: 1199.98px) {

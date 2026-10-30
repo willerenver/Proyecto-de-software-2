@@ -1,7 +1,7 @@
 import { reactive } from 'vue'
 
 // «Recordarme» guarda la sesión en localStorage; si no, dura lo que la pestaña (sessionStorage).
-const CLAVE = 'pujalo.sesion'
+const CLAVE = 'elmejorpostor.sesion'
 
 function almacenes() {
   try {

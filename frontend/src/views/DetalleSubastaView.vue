@@ -396,7 +396,7 @@ async function cancelar() {
               <AvatarIniciales :iniciales="subasta.vendedor.iniciales" :tam="48" />
               <div class="flex-grow-1">
                 <div class="fw-bold nombre">{{ subasta.vendedor.nombre }}</div>
-                <div class="meta">{{ subasta.vendedor.ventas }} {{ subasta.vendedor.ventas === 1 ? 'venta' : 'ventas' }} en Pújalo</div>
+                <div class="meta">{{ subasta.vendedor.ventas }} {{ subasta.vendedor.ventas === 1 ? 'venta' : 'ventas' }} en El Mejor Postor</div>
               </div>
             </div>
             <div v-if="subasta.permiteRetiro" class="d-flex align-items-center gap-2 texto-14"><Package :size="16" class="texto-gris" /> Retiro en persona</div>
@@ -435,11 +435,11 @@ async function cancelar() {
 <style scoped>
 .migas {
   font-size: 14px;
-  color: var(--pj-gris-claro);
+  color: var(--mp-gris-claro);
 }
 
 .migas .actual {
-  color: var(--pj-gris);
+  color: var(--mp-gris);
 }
 
 .dos-columnas {
@@ -485,7 +485,7 @@ async function cancelar() {
 }
 
 .sin-foto {
-  color: var(--pj-gris-claro);
+  color: var(--mp-gris-claro);
 }
 
 .automatica {
@@ -502,14 +502,14 @@ async function cancelar() {
 
 .descartada {
   text-decoration: line-through;
-  color: var(--pj-gris);
+  color: var(--mp-gris);
 }
 
 .resultado {
   padding: 14px 16px;
   border-radius: 6px;
-  background: var(--pj-claro);
-  border: 1px solid var(--pj-borde);
+  background: var(--mp-claro);
+  border: 1px solid var(--mp-borde);
   font-size: 14px;
   line-height: 20px;
 }
@@ -541,7 +541,7 @@ async function cancelar() {
 }
 
 .miniaturas button.activa {
-  outline-color: var(--pj-primario);
+  outline-color: var(--mp-primario);
 }
 
 .parrafo {
@@ -556,7 +556,7 @@ async function cancelar() {
 
 .tabla-pj {
   background: #fff;
-  border: 1px solid var(--pj-borde);
+  border: 1px solid var(--mp-borde);
   border-radius: 8px;
   overflow: hidden;
   font-size: 14px;
@@ -566,7 +566,7 @@ async function cancelar() {
   display: flex;
   align-items: center;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--pj-borde);
+  border-bottom: 1px solid var(--mp-borde);
 }
 
 .tabla-pj .fila:last-child {
@@ -576,12 +576,12 @@ async function cancelar() {
 .tabla-pj .clave {
   width: 200px;
   flex-shrink: 0;
-  color: var(--pj-gris);
+  color: var(--mp-gris);
 }
 
 .tabla-pj .encabezado {
-  background: var(--pj-claro);
-  color: var(--pj-gris);
+  background: var(--mp-claro);
+  color: var(--mp-gris);
   font-size: 13px;
   font-weight: 500;
 }
@@ -609,7 +609,7 @@ async function cancelar() {
 
 .tenue {
   font-size: 12px;
-  color: var(--pj-gris-claro);
+  color: var(--mp-gris-claro);
 }
 
 .derecha {
@@ -633,12 +633,12 @@ async function cancelar() {
 
 .meta {
   font-size: 13px;
-  color: var(--pj-gris);
+  color: var(--mp-gris);
 }
 
 .etiqueta {
   font-size: 14px;
-  color: var(--pj-gris);
+  color: var(--mp-gris);
 }
 
 .monto {
@@ -655,11 +655,11 @@ async function cancelar() {
 .reserva {
   font-size: 14px;
   font-weight: 500;
-  color: var(--pj-gris);
+  color: var(--mp-gris);
 }
 
 .reserva.alcanzada {
-  color: var(--pj-exito);
+  color: var(--mp-exito);
 }
 
 .texto-14 {
@@ -670,14 +670,14 @@ async function cancelar() {
   flex: 1;
   display: flex;
   height: 50px;
-  border: 1px solid var(--pj-borde);
+  border: 1px solid var(--mp-borde);
   border-radius: 6px;
   overflow: hidden;
   background: #fff;
 }
 
 .campo-puja.error {
-  border-color: var(--pj-peligro);
+  border-color: var(--mp-peligro);
 }
 
 .campo-puja span {
@@ -685,7 +685,7 @@ async function cancelar() {
   align-items: center;
   padding: 0 14px;
   background: #e9ecef;
-  color: var(--pj-gris);
+  color: var(--mp-gris);
   font-size: 16px;
 }
 
@@ -717,11 +717,11 @@ async function cancelar() {
   align-items: center;
   padding: 12px 16px;
   background: #fff;
-  border-bottom: 1px solid var(--pj-borde);
+  border-bottom: 1px solid var(--mp-borde);
 }
 
 .cabecera-movil a {
-  color: var(--pj-texto);
+  color: var(--mp-texto);
 }
 
 .barra-puja {
@@ -735,7 +735,7 @@ async function cancelar() {
   gap: 10px;
   padding: 12px 16px 28px;
   background: #fff;
-  border-top: 1px solid var(--pj-borde);
+  border-top: 1px solid var(--mp-borde);
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.06);
 }
 
@@ -802,7 +802,7 @@ async function cancelar() {
   .vendedor {
     padding: 14px 0 0;
     border: 0;
-    border-top: 1px solid var(--pj-borde);
+    border-top: 1px solid var(--mp-borde);
     border-radius: 0;
     margin-top: 14px;
   }

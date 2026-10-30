@@ -187,7 +187,7 @@ const pasos = [
 .banner {
   display: flex;
   min-height: 300px;
-  background: var(--pj-primario);
+  background: var(--mp-primario);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -227,7 +227,7 @@ const pasos = [
   align-items: flex-start;
   gap: 12px;
   padding: 20px;
-  background: var(--pj-primario);
+  background: var(--mp-primario);
   border-radius: 10px;
 }
 
@@ -275,9 +275,9 @@ const pasos = [
   gap: 10px;
   padding: 18px 8px;
   background: #fff;
-  border: 1px solid var(--pj-borde);
+  border: 1px solid var(--mp-borde);
   border-radius: 8px;
-  color: var(--pj-texto);
+  color: var(--mp-texto);
 }
 
 .categoria .icono {
@@ -286,8 +286,8 @@ const pasos = [
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--pj-primario-suave);
-  color: var(--pj-primario);
+  background: var(--mp-primario-suave);
+  color: var(--mp-primario);
 }
 
 .titulo-lista {
@@ -306,7 +306,7 @@ const pasos = [
   border-radius: 50%;
   display: inline-grid;
   place-items: center;
-  background: var(--pj-primario);
+  background: var(--mp-primario);
   color: #fff;
   font-weight: 700;
 }
@@ -317,23 +317,23 @@ const pasos = [
   padding: 12px 16px;
   overflow-x: auto;
   background: #fff;
-  border-bottom: 1px solid var(--pj-borde);
+  border-bottom: 1px solid var(--mp-borde);
 }
 
 .chip {
   background: #fff;
-  color: var(--pj-texto);
+  color: var(--mp-texto);
   padding: 6px 14px;
   border-radius: 16px;
-  border: 1px solid var(--pj-borde);
+  border: 1px solid var(--mp-borde);
   font-size: 14px;
   font-weight: 500;
   white-space: nowrap;
 }
 
 .chip.activo {
-  background: var(--pj-primario);
-  border-color: var(--pj-primario);
+  background: var(--mp-primario);
+  border-color: var(--mp-primario);
   color: #fff;
 }
 

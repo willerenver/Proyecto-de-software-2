@@ -6,7 +6,7 @@ import AvatarIniciales from '../components/AvatarIniciales.vue'
 import { api, urlFoto } from '../api/cliente'
 import { fechaConHora, rd } from '../utils/formato'
 
-// Pantalla 08 del Figma, adaptada: Pújalo no cobra en línea. El ganador y el vendedor ven los datos
+// Pantalla 08 del Figma, adaptada: El Mejor Postor no cobra en línea. El ganador y el vendedor ven los datos
 // de contacto del otro (GET /api/subastas/{id}/contacto) y acuerdan el pago y la entrega.
 const route = useRoute()
 const subasta = ref(null)
@@ -46,8 +46,8 @@ const whatsapp = computed(() => {
   return digitos.length >= 11 ? `https://wa.me/${digitos}` : null
 })
 const mensaje = computed(() => (soyComprador.value
-  ? `Hola, gané tu subasta «${subasta.value?.titulo}» en Pújalo por ${rd(contacto.value?.monto ?? 0)}. ¿Cómo coordinamos el pago y la entrega?`
-  : `Hola, soy el vendedor de «${subasta.value?.titulo}» en Pújalo. Ganaste con ${rd(contacto.value?.monto ?? 0)}. ¿Cómo coordinamos el pago y la entrega?`))
+  ? `Hola, gané tu subasta «${subasta.value?.titulo}» en El Mejor Postor por ${rd(contacto.value?.monto ?? 0)}. ¿Cómo coordinamos el pago y la entrega?`
+  : `Hola, soy el vendedor de «${subasta.value?.titulo}» en El Mejor Postor. Ganaste con ${rd(contacto.value?.monto ?? 0)}. ¿Cómo coordinamos el pago y la entrega?`))
 </script>
 
 <template>
@@ -84,7 +84,7 @@ const mensaje = computed(() => (soyComprador.value
               <div class="fw-bold fs-6">{{ otro.nombre }}</div>
             </div>
             <div class="d-flex flex-wrap gap-2">
-              <a :href="`mailto:${otro.correo}?subject=${encodeURIComponent(`Subasta #${subasta.id} en Pújalo`)}&body=${encodeURIComponent(mensaje)}`" class="btn btn-light d-inline-flex align-items-center gap-2"><Mail :size="16" /> {{ otro.correo }}</a>
+              <a :href="`mailto:${otro.correo}?subject=${encodeURIComponent(`Subasta #${subasta.id} en El Mejor Postor`)}&body=${encodeURIComponent(mensaje)}`" class="btn btn-light d-inline-flex align-items-center gap-2"><Mail :size="16" /> {{ otro.correo }}</a>
               <a v-if="otro.telefono" :href="`tel:${otro.telefono}`" class="btn btn-light d-inline-flex align-items-center gap-2"><Phone :size="16" /> {{ otro.telefono }}</a>
               <a v-if="whatsapp" :href="`${whatsapp}?text=${encodeURIComponent(mensaje)}`" target="_blank" rel="noopener" class="btn btn-success d-inline-flex align-items-center gap-2"><MessageCircle :size="16" /> WhatsApp</a>
             </div>
@@ -185,24 +185,24 @@ const mensaje = computed(() => (soyComprador.value
   align-items: center;
   gap: 12px;
   padding: 16px;
-  border: 1px solid var(--pj-borde);
+  border: 1px solid var(--mp-borde);
   border-radius: 8px;
   background: #fff;
 }
 
 .opcion .icono {
-  color: var(--pj-gris);
+  color: var(--mp-gris);
   flex-shrink: 0;
 }
 
 .opcion.activa {
-  border: 2px solid var(--pj-primario);
+  border: 2px solid var(--mp-primario);
   padding: 15px;
   background: #f5f9fe;
 }
 
 .opcion.activa .icono {
-  color: var(--pj-primario);
+  color: var(--mp-primario);
 }
 
 .miniatura {

@@ -407,32 +407,32 @@ async function publicar() {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  border: 1px solid var(--pj-gris-claro);
-  color: var(--pj-gris);
+  border: 1px solid var(--mp-gris-claro);
+  color: var(--mp-gris);
   font-weight: 700;
   font-size: 14px;
 }
 
 .circulo.hecho {
-  background: var(--pj-exito);
-  border-color: var(--pj-exito);
+  background: var(--mp-exito);
+  border-color: var(--mp-exito);
   color: #fff;
 }
 
 .circulo.actual {
-  background: var(--pj-primario);
-  border-color: var(--pj-primario);
+  background: var(--mp-primario);
+  border-color: var(--mp-primario);
   color: #fff;
 }
 
 .conector {
   flex: 1;
   height: 2px;
-  background: var(--pj-borde);
+  background: var(--mp-borde);
 }
 
 .conector.hecho {
-  background: var(--pj-exito);
+  background: var(--mp-exito);
 }
 
 .dos-columnas {
@@ -507,8 +507,8 @@ async function publicar() {
 }
 
 .soltar.arrastrando {
-  border-color: var(--pj-primario);
-  background: var(--pj-primario-suave);
+  border-color: var(--mp-primario);
+  background: var(--mp-primario-suave);
 }
 
 .soltar {
@@ -520,8 +520,8 @@ async function publicar() {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  background: var(--pj-claro);
-  border: 1px dashed var(--pj-gris-claro);
+  background: var(--mp-claro);
+  border: 1px dashed var(--mp-gris-claro);
   border-radius: 8px;
   cursor: pointer;
 }

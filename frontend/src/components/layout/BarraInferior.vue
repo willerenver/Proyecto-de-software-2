@@ -46,7 +46,7 @@ async function buscar() {
   justify-content: space-between;
   padding: 8px 8px 24px;
   background: #fff;
-  border-top: 1px solid var(--pj-borde);
+  border-top: 1px solid var(--mp-borde);
 }
 
 .item {
@@ -59,11 +59,11 @@ async function buscar() {
   border: 0;
   background: none;
   font-size: 11px;
-  color: var(--pj-gris);
+  color: var(--mp-gris);
 }
 
 .item.activo {
-  color: var(--pj-primario);
+  color: var(--mp-primario);
   font-weight: 500;
 }
 

@@ -33,7 +33,7 @@ async function enviar() {
     <div v-if="enviado" class="panel tarjeta d-flex flex-column gap-3">
       <MailCheck :size="32" class="text-success" />
       <h1 class="fw-bold mb-0 titulo">Revisa tu correo</h1>
-      <p class="mb-0">Si <strong>{{ correo }}</strong> tiene una cuenta en Pújalo, te enviamos un enlace para elegir una contraseña nueva. El enlace vence en 1 hora.</p>
+      <p class="mb-0">Si <strong>{{ correo }}</strong> tiene una cuenta en El Mejor Postor, te enviamos un enlace para elegir una contraseña nueva. El enlace vence en 1 hora.</p>
       <p class="texto-gris mb-0">¿No llegó? Revisa la carpeta de correo no deseado o pide otro enlace.</p>
       <div class="d-flex gap-2">
         <button type="button" class="btn btn-light" @click="enviado = false">Pedir otro enlace</button>

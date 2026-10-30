@@ -1,5 +1,5 @@
 <script setup>
-import LogoPujalo from '../LogoPujalo.vue'
+import LogoElMejorPostor from '../LogoElMejorPostor.vue'
 
 const columnas = [
   { titulo: 'Comprar', enlaces: ['Cómo pujar', 'Subastas que terminan hoy', 'Categorías'] },
@@ -13,7 +13,7 @@ const columnas = [
     <div class="contenedor pt-5 pb-4">
       <div class="d-flex gap-5 mb-4">
         <div class="marca">
-          <LogoPujalo claro />
+          <LogoElMejorPostor claro />
           <p class="mt-3 mb-0">Compra y vende por subasta con gente de tu ciudad.</p>
         </div>
         <div v-for="c in columnas" :key="c.titulo" class="d-flex flex-column gap-2">
@@ -22,7 +22,7 @@ const columnas = [
         </div>
       </div>
       <div class="legal d-flex justify-content-between pt-4">
-        <span>© 2026 Pújalo · Proyecto universitario</span>
+        <span>© 2026 El Mejor Postor · Proyecto universitario</span>
         <span>Términos · Privacidad</span>
       </div>
     </div>
@@ -31,7 +31,7 @@ const columnas = [
 
 <style scoped>
 .pie {
-  background: var(--pj-primario-oscuro);
+  background: var(--mp-primario-oscuro);
   color: #b8c7da;
   font-size: 14px;
 }
