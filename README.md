@@ -28,7 +28,7 @@ cp .env.example .env          # completa SA_PASSWORD, JWT_CLAVE, WEB_URL y SMTP_
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
-`docker-compose.prod.yml` corre en Production: sin datos de demostración ni `/api/docs`, con clave JWT propia y correo por SMTP. Si falta una variable obligatoria, Compose se detiene y dice cuál. El HTTPS lo pone un proxy con certificado delante del puerto `PUERTO_WEB` (Caddy, Traefik o el balanceador del proveedor).
+`docker-compose.prod.yml` corre en Production: sin datos de demostración ni `/api/docs`, con clave JWT propia y correo por SMTP. Si falta una variable obligatoria, Compose se detiene y dice cuál. El HTTPS lo pone un proxy con certificado en el mismo servidor (Caddy o Traefik) que reenvía a `PUERTO_WEB` (por defecto `127.0.0.1:8080`) con `X-Forwarded-For`; nginx toma de ahí la IP real del cliente para el límite de intentos. No publiques nginx en `0.0.0.0`: cualquiera podría falsear su IP.
 
 ## Frontend
 
@@ -89,7 +89,7 @@ Al arrancar aplica las migraciones pendientes (`Datos/Migraciones`). En desarrol
 
 Los usuarios de demostración usan la contraseña de `Demo:Contrasena` en `appsettings.Development.json`: `admin@elmejorpostor.test` (administrador), `maria.r@elmejorpostor.test`, `luis.rosario@elmejorpostor.test`, `ana.pena@elmejorpostor.test`, `jesus.p@elmejorpostor.test`, `carlo91@elmejorpostor.test`, `a.ruiz_rd@elmejorpostor.test`.
 
-**Correo.** «Olvidé mi contraseña» envía el enlace por SMTP con la sección `Smtp` (`Host`, `Puerto`, `Ssl`, `Usuario`, `Contrasena`, `Remitente`); guárdala también con *user-secrets*. Los correos salen en segundo plano y quedan guardados en la tabla `correo_pendiente` hasta que se entregan: si el SMTP falla o la API se reinicia, se reintentan (1, 2, 4… minutos, hasta una hora; se descartan tras 8 intentos). En Development y sin `Smtp:Host`, el correo se escribe en la consola de la API para poder probar el enlace; fuera de Development la API no arranca sin SMTP. `Web:Url` es la dirección del frontend que va en el enlace.
+**Correo.** «Olvidé mi contraseña» envía el enlace por SMTP con la sección `Smtp` (`Host`, `Puerto`, `Ssl`, `Usuario`, `Contrasena`, `Remitente`); guárdala también con *user-secrets*. Los correos salen en segundo plano y quedan guardados en la tabla `correo_pendiente` hasta que se entregan: si el SMTP falla o la API se reinicia, se reintentan (1, 2, 4… minutos, hasta una hora; se descartan tras 8 intentos). El correo de recuperación de contraseña es la excepción: lleva un código de un solo uso, así que no se guarda en la base; si falla, se pide otro enlace. En Development y sin `Smtp:Host`, el correo se escribe en la consola de la API para poder probar el enlace; fuera de Development la API no arranca sin SMTP. `Web:Url` es la dirección del frontend que va en el enlace.
 
 **Avisos por correo.** Se envían cuando te superan (o superan tu puja automática), al cerrar (al ganador y al vendedor, o al vendedor si no hubo ganador), cuando la subasta pasa al siguiente postor por falta de pago y cuando el vendedor confirma el pago.
 
