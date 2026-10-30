@@ -27,7 +27,8 @@ public class MisPujasController(ElMejorPostorDbContext db, TimeProvider reloj) :
                 s.Articulo.Titulo,
                 Foto = s.Articulo.Imagenes.OrderBy(i => i.Orden).Select(i => i.Ruta).FirstOrDefault(),
                 MiPuja = s.Pujas.Where(p => p.PostorId == yo).OrderByDescending(p => p.Id).Select(p => p.Monto).First(),
-                Ultima = s.Pujas.OrderByDescending(p => p.Id).Select(p => new { p.Monto, p.PostorId }).First(),
+                // Puede no haber ninguna vigente si se descartaron todas (el ganador no pagó y nadie más alcanzó la reserva).
+                Ultima = s.Pujas.Where(p => !p.Descartada).OrderByDescending(p => p.Monto).Select(p => new { p.Monto, p.PostorId }).FirstOrDefault(),
                 s.IncrementoMinimo,
                 s.FechaCierre,
                 s.Estado,
@@ -36,11 +37,13 @@ public class MisPujasController(ElMejorPostorDbContext db, TimeProvider reloj) :
             .ToListAsync(ct);
 
         return filas
-            .Select(f => new MiPujaResponse(f.Id, f.Titulo, f.Foto, f.MiPuja, f.Ultima.Monto, f.Ultima.Monto + f.IncrementoMinimo, f.FechaCierre, Situacion(f.Estado, f.FechaCierre, f.Ultima.PostorId, f.GanadorId)))
+            .Select(f => new { f, Actual = f.Ultima?.Monto ?? f.MiPuja })
+            .Select(x => new MiPujaResponse(x.f.Id, x.f.Titulo, x.f.Foto, x.f.MiPuja, x.Actual, x.Actual + x.f.IncrementoMinimo, x.f.FechaCierre,
+                Situacion(x.f.Estado, x.f.FechaCierre, x.f.Ultima?.PostorId, x.f.GanadorId)))
             .OrderBy(f => f.FechaCierre)
             .ToList();
 
-        string Situacion(EstadoSubasta estado, DateTime cierre, long ultimoPostor, long? ganador) => estado switch
+        string Situacion(EstadoSubasta estado, DateTime cierre, long? ultimoPostor, long? ganador) => estado switch
         {
             EstadoSubasta.Finalizada => ganador == yo ? "ganada" : "perdida",
             EstadoSubasta.Desierta or EstadoSubasta.Cancelada => "perdida",

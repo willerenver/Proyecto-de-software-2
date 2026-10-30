@@ -23,7 +23,7 @@ public class MisVentasController(ElMejorPostorDbContext db) : ControllerBase
                 s.Id, s.Articulo.Titulo,
                 s.Articulo.Imagenes.OrderBy(i => i.Orden).Select(i => i.Ruta).FirstOrDefault(),
                 s.PrecioSalida,
-                s.Pujas.OrderByDescending(p => p.Id).Select(p => (decimal?)p.Monto).FirstOrDefault(),
+                s.Pujas.Where(p => !p.Descartada).Max(p => (decimal?)p.Monto),
                 s.Pujas.Count, s.FechaInicio, s.FechaCierre, s.Estado.ToString(),
                 s.PujaGanadora == null ? null : new ContactoResponse(
                     s.PujaGanadora.Postor.Nombre + " " + s.PujaGanadora.Postor.Apellido,

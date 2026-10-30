@@ -92,9 +92,9 @@ public class PujaService(ElMejorPostorDbContext db, TimeProvider reloj, Avisos? 
 
     private async Task<Estado> EstadoAsync(Subasta subasta, CancellationToken ct)
     {
-        // Las pujas solo suben, así que la más alta es la última registrada.
-        var lider = await db.Pujas.Where(p => p.SubastaId == subasta.Id)
-            .OrderByDescending(p => p.Id).Select(p => new { p.Monto, p.Postor }).FirstOrDefaultAsync(ct);
+        // Se ordena por monto y no por Id: varias pujas automáticas de un mismo guardado no tienen garantizado el orden de sus Id.
+        var lider = await db.Pujas.Where(p => p.SubastaId == subasta.Id && !p.Descartada)
+            .OrderByDescending(p => p.Monto).Select(p => new { p.Monto, p.Postor }).FirstOrDefaultAsync(ct);
         return new Estado { Monto = lider?.Monto, LiderId = lider?.Postor.Id, LiderInicial = lider?.Postor };
     }
 
