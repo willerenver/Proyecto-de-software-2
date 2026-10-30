@@ -28,7 +28,7 @@ public class RecuperacionService(ElMejorPostorDbContext db, IPasswordHasher<Usua
         var enlace = $"{(config["Web:Url"] ?? "http://localhost:5173").TrimEnd('/')}/restablecer-contrasena?codigo={codigo}";
         await correo.EnviarAsync(usuario.Correo, "Restablece tu contraseña de El Mejor Postor",
             $"Hola, {usuario.Nombre}:\n\nPara elegir una contraseña nueva abre este enlace (vence en 1 hora):\n{enlace}\n\n" +
-            "Si no lo pediste, ignora este correo: tu contraseña no cambia.", ct);
+            "Si no lo pediste, ignora este correo: tu contraseña no cambia.", contieneSecreto: true, ct);
     }
 
     public async Task RestablecerAsync(string codigo, string contrasena, CancellationToken ct = default)

@@ -10,7 +10,7 @@ public class AvisosTests : IDisposable
 
     private sealed class CorreoDePrueba(List<(string, string)> enviados) : IEnviadorCorreo
     {
-        public Task EnviarAsync(string para, string asunto, string texto, CancellationToken ct = default)
+        public Task EnviarAsync(string para, string asunto, string texto, bool contieneSecreto = false, CancellationToken ct = default)
         {
             enviados.Add((para, asunto));
             return Task.CompletedTask;

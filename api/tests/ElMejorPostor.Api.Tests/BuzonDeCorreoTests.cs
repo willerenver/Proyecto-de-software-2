@@ -29,11 +29,14 @@ public class BuzonDeCorreoTests : IDisposable
         return await new BuzonDeCorreo(db, servidor, _base.Reloj, NullLogger<BuzonDeCorreo>.Instance).EntregarAsync(CancellationToken.None);
     }
 
-    private async Task GuardarAsync(params (string, string, string)[] correos)
+    private async Task RecibirAsync(ServidorDePrueba servidor, params CorreoEnCola[] correos)
     {
         await using var db = _base.Contexto();
-        await new BuzonDeCorreo(db, new ServidorDePrueba(), _base.Reloj, NullLogger<BuzonDeCorreo>.Instance).GuardarAsync(correos, CancellationToken.None);
+        await new BuzonDeCorreo(db, servidor, _base.Reloj, NullLogger<BuzonDeCorreo>.Instance).RecibirAsync(correos, CancellationToken.None);
     }
+
+    private Task GuardarAsync(params (string Para, string Asunto, string Texto)[] correos) =>
+        RecibirAsync(new ServidorDePrueba(), correos.Select(c => new CorreoEnCola(c.Para, c.Asunto, c.Texto)).ToArray());
 
     private async Task<List<CorreoPendiente>> PendientesAsync()
     {
@@ -85,6 +88,24 @@ public class BuzonDeCorreoTests : IDisposable
             _base.Reloj.Ahora = BaseDePrueba.Hoy.AddDays(i);
             await EntregarAsync(servidor);
         }
+
+        Assert.Empty(await PendientesAsync());
+    }
+
+    [Fact]
+    public async Task Un_correo_con_un_codigo_secreto_se_entrega_sin_guardarlo_en_la_base()
+    {
+        var servidor = new ServidorDePrueba();
+        await RecibirAsync(servidor, new CorreoEnCola("maria@prueba.test", "Restablece tu contraseña", "…codigo=abc", ContieneSecreto: true));
+
+        Assert.Equal(["maria@prueba.test: Restablece tu contraseña"], servidor.Entregados);
+        Assert.Empty(await PendientesAsync());
+    }
+
+    [Fact]
+    public async Task Si_falla_el_envio_de_un_codigo_secreto_tampoco_se_guarda()
+    {
+        await RecibirAsync(new ServidorDePrueba { Falla = true }, new CorreoEnCola("maria@prueba.test", "Restablece tu contraseña", "…codigo=abc", ContieneSecreto: true));
 
         Assert.Empty(await PendientesAsync());
     }

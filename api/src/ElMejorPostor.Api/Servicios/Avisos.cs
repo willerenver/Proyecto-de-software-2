@@ -50,7 +50,7 @@ public class Avisos(IEnviadorCorreo correo, IConfiguration config)
     public async Task EnviarAsync(CancellationToken ct = default)
     {
         foreach (var (para, asunto, texto) in _pendientes)
-            await correo.EnviarAsync(para, asunto, texto, ct);
+            await correo.EnviarAsync(para, asunto, texto, ct: ct);
         _pendientes.Clear();
     }
 

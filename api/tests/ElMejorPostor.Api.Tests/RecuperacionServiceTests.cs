@@ -15,10 +15,10 @@ public class RecuperacionServiceTests : IDisposable
 
     private sealed class CorreoDePrueba : IEnviadorCorreo
     {
-        public List<(string Para, string Texto)> Enviados { get; } = [];
-        public Task EnviarAsync(string para, string asunto, string texto, CancellationToken ct = default)
+        public List<(string Para, string Texto, bool ContieneSecreto)> Enviados { get; } = [];
+        public Task EnviarAsync(string para, string asunto, string texto, bool contieneSecreto = false, CancellationToken ct = default)
         {
-            Enviados.Add((para, texto));
+            Enviados.Add((para, texto, contieneSecreto));
             return Task.CompletedTask;
         }
     }
@@ -35,6 +35,7 @@ public class RecuperacionServiceTests : IDisposable
         await using (var db = _base.Contexto())
             await Servicio(db).SolicitarAsync("MARIA@prueba.test ");
         var codigo = CodigoEnviado();
+        Assert.True(_correo.Enviados[^1].ContieneSecreto, "El enlace lleva el código: no debe quedar guardado en correo_pendiente.");
 
         await using (var db = _base.Contexto())
             await Servicio(db).RestablecerAsync(codigo, "nueva1234");

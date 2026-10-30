@@ -8,10 +8,13 @@ using ElMejorPostor.Api.Dominio;
 namespace ElMejorPostor.Api.Servicios;
 
 // Lo que usan los servicios para mandar un correo. No espera el envío: lo deja en la cola.
+// contieneSecreto: el texto lleva un código de un solo uso (recuperar la contraseña) y no se guarda en la base.
 public interface IEnviadorCorreo
 {
-    Task EnviarAsync(string para, string asunto, string texto, CancellationToken ct = default);
+    Task EnviarAsync(string para, string asunto, string texto, bool contieneSecreto = false, CancellationToken ct = default);
 }
+
+public record CorreoEnCola(string Para, string Asunto, string Texto, bool ContieneSecreto = false);
 
 // Quien entrega el correo de verdad (SMTP, o el registro en desarrollo).
 public interface IServidorCorreo
@@ -24,12 +27,12 @@ public interface IServidorCorreo
 // EnvioDeCorreoWorker la vacía enseguida en la tabla correo_pendiente (BuzonDeCorreo).
 public class ColaDeCorreo : IEnviadorCorreo
 {
-    private readonly Channel<(string Para, string Asunto, string Texto)> _canal = Channel.CreateUnbounded<(string, string, string)>();
+    private readonly Channel<CorreoEnCola> _canal = Channel.CreateUnbounded<CorreoEnCola>();
 
-    public ChannelReader<(string Para, string Asunto, string Texto)> Lector => _canal.Reader;
+    public ChannelReader<CorreoEnCola> Lector => _canal.Reader;
 
-    public Task EnviarAsync(string para, string asunto, string texto, CancellationToken ct = default) =>
-        _canal.Writer.WriteAsync((para, asunto, texto), ct).AsTask();
+    public Task EnviarAsync(string para, string asunto, string texto, bool contieneSecreto = false, CancellationToken ct = default) =>
+        _canal.Writer.WriteAsync(new CorreoEnCola(para, asunto, texto, contieneSecreto), ct).AsTask();
 }
 
 // Guarda en la base los correos de la cola y entrega los que tocan. Si la API se reinicia o el SMTP
@@ -38,11 +41,27 @@ public class BuzonDeCorreo(ElMejorPostorDbContext db, IServidorCorreo servidor, 
 {
     public const int PorVuelta = 20;
 
-    public async Task GuardarAsync(IEnumerable<(string Para, string Asunto, string Texto)> correos, CancellationToken ct)
+    // Los correos con un código secreto se entregan una sola vez y nunca se guardan: quien lea la base
+    // no debe poder usar un enlace de recuperación. Si ese envío falla, la persona vuelve a pedir el enlace.
+    public async Task RecibirAsync(IEnumerable<CorreoEnCola> correos, CancellationToken ct)
     {
         var ahora = reloj.GetUtcNow().UtcDateTime;
-        foreach (var (para, asunto, texto) in correos)
-            db.CorreosPendientes.Add(new CorreoPendiente { Para = para, Asunto = asunto, Texto = texto, CreadoEn = ahora, ProximoIntento = ahora });
+        foreach (var c in correos)
+        {
+            if (!c.ContieneSecreto)
+            {
+                db.CorreosPendientes.Add(new CorreoPendiente { Para = c.Para, Asunto = c.Asunto, Texto = c.Texto, CreadoEn = ahora, ProximoIntento = ahora });
+                continue;
+            }
+            try
+            {
+                await servidor.EntregarAsync(c.Para, c.Asunto, c.Texto, ct);
+            }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                log.LogError(e, "No se pudo enviar el correo «{Asunto}»; no se reintenta porque lleva un código secreto", c.Asunto);
+            }
+        }
         await db.SaveChangesAsync(ct);
     }
 
@@ -87,7 +106,7 @@ public class EnvioDeCorreoWorker(ColaDeCorreo cola, IServiceScopeFactory scopes,
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
         // Los que salieron de la cola pero todavía no se guardaron (por ejemplo, si la base no respondió).
-        var porGuardar = new List<(string, string, string)>();
+        var porGuardar = new List<CorreoEnCola>();
         while (!ct.IsCancellationRequested)
         {
             try
@@ -97,7 +116,7 @@ public class EnvioDeCorreoWorker(ColaDeCorreo cola, IServiceScopeFactory scopes,
                 var buzon = scope.ServiceProvider.GetRequiredService<BuzonDeCorreo>();
                 if (porGuardar.Count > 0)
                 {
-                    await buzon.GuardarAsync(porGuardar, ct);
+                    await buzon.RecibirAsync(porGuardar, ct);
                     porGuardar.Clear();
                 }
                 while (await buzon.EntregarAsync(ct) == BuzonDeCorreo.PorVuelta) { }
